@@ -25,7 +25,6 @@
 	"license": "Apache Public License v2",
 	"gypfile": true,
 	"main": "./ios-device",
-	"os" : [ "darwin" ],
 	"engines": {
 		"node": ">=0.8"
 	}
