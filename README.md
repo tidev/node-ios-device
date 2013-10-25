@@ -31,7 +31,7 @@ From Source:
 	var iosDevice = require('node-ios-device');
 
 	// get all connected iOS devices
-	iosDevice.device(function (err, devices) {
+	iosDevice.devices(function (err, devices) {
 		console.log('Connected devices:');
 		console.log(devices);
 	});
