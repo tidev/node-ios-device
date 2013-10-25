@@ -28,7 +28,7 @@ From Source:
 
 ## Example
 
-	var iosDevice = require('ios-device');
+	var iosDevice = require('node-ios-device');
 
 	// get all connected iOS devices
 	iosDevice.device(function (err, devices) {
