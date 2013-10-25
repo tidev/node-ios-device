@@ -33,7 +33,7 @@ var fs = require('fs'),
 function loadIosDeviceModule() {
 	if (initialized) return;
 
-	var lib = './out/node-ios-device';
+	var lib = __dirname + '/out/node-ios-device';
 	if (process.versions.modules > 0x000B) {
 		lib += '-isolate';
 	}
