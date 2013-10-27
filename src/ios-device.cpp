@@ -322,7 +322,7 @@ X_METHOD(installApp) {
 	} else if (rval == MDERR_INVALID_ARGUMENT) {
 		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: invalid argument, USBMuxConnectByPort returned 0xffffffff"))));
 	} else if (rval != MDERR_OK) {
-		snprintf(tmp, 256, "Failed to connect to device (%d)", rval);
+		snprintf(tmp, 256, "Failed to connect to device (0x%x)", rval);
 		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
 	}
 
@@ -348,7 +348,7 @@ X_METHOD(installApp) {
 			} else if (rval == MDERR_DICT_NOT_LOADED) {
 				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: load_dict() failed"))));
 			} else if (rval != MDERR_OK) {
-				snprintf(tmp, 256, "Device is not paired (%d)", rval);
+				snprintf(tmp, 256, "Device is not paired (0x%x)", rval);
 				X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
 			}
 		}
@@ -361,7 +361,7 @@ X_METHOD(installApp) {
 	} else if (rval == MDERR_DICT_NOT_LOADED) {
 		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: load_dict() failed"))));
 	} else if (rval != MDERR_OK) {
-		snprintf(tmp, 256, "Failed to start session (%d)", rval);
+		snprintf(tmp, 256, "Failed to start session (0x%x)", rval);
 		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
 	}
 
@@ -375,8 +375,12 @@ X_METHOD(installApp) {
 		CFRelease(options);
 		CFRelease(localUrl);
 		AMDeviceDisconnect(*device);
-		snprintf(tmp, 256, "Failed to copy app to device (%d)", rval);
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+		if (rval == -402653177) {
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to copy app to device: can't install app that contains symlinks"))));
+		} else {
+			snprintf(tmp, 256, "Failed to copy app to device (0x%x)", rval);
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+		}
 	}
 
 	// install package on device
@@ -388,7 +392,7 @@ X_METHOD(installApp) {
 		if (rval == -402620395) {
 			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to install app on device: most likely a provisioning profile issue"))));
 		} else {
-			snprintf(tmp, 256, "Failed to install app on device (%d)", rval);
+			snprintf(tmp, 256, "Failed to install app on device (0x%x)", rval);
 			X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
 		}
 	}
