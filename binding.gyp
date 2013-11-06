@@ -19,12 +19,22 @@
 			{
 				'targets': [
 					{
-						'target_name': 'node-ios-device',
+						'target_name': 'node_ios_device_v1',
 						'sources': ['<@(source_files)'],
 						'libraries': ['<@(library_files)']
 					},
 					{
-						'target_name': 'node-ios-device-isolate',
+						'target_name': 'node_ios_device_v11',
+						'sources': ['<@(source_files)'],
+						'libraries': ['<@(library_files)']
+					},
+					{
+						'target_name': 'node_ios_device_v12',
+						'sources': ['<@(source_files)'],
+						'libraries': ['<@(library_files)']
+					},
+					{
+						'target_name': 'node_ios_device_v13',
 						'sources': ['<@(source_files)'],
 						'libraries': ['<@(library_files)']
 					}

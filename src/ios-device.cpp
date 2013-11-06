@@ -422,8 +422,12 @@ void init(Handle<Object> exports) {
 	AMDeviceNotificationSubscribe(&on_device_notification, 0, 0, NULL, &notification);
 }
 
-#if NODE_MODULE_VERSION > 0x000B
-  NODE_MODULE(node_ios_device_isolate, init)
+#if NODE_MODULE_VERSION > 0x000C
+  NODE_MODULE(node_ios_device_v13, init)
+#elif NODE_MODULE_VERSION > 0x000B
+  NODE_MODULE(node_ios_device_v12, init)
+#elif NODE_MODULE_VERSION > 0x000A
+  NODE_MODULE(node_ios_device_v11, init)
 #else
-  NODE_MODULE(node_ios_device, init)
+  NODE_MODULE(node_ios_device_v1, init)
 #endif

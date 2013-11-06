@@ -4,7 +4,7 @@ iosDevice.devices(function (err, devices) {
 	console.log(devices);
 
 	if (devices.length) {
-		iosDevice.installApp(devices[0].udid, 'testapp22.app', function (err) {
+		iosDevice.installApp(devices[0].udid, '/Users/chris/Desktop/testapp2.app', function (err) {
 			if (err) {
 				console.error('ERROR!!!');
 				console.error(err);

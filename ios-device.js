@@ -33,10 +33,11 @@ var fs = require('fs'),
 function loadIosDeviceModule() {
 	if (initialized) return;
 
-	var lib = __dirname + '/out/node-ios-device';
-	if (process.versions.modules > 0x000B) {
-		lib += '-isolate';
-	}
+	var modulesVer = parseInt(process.versions.modules) || (function (m) {
+		return !m || m[1] == '0.8' ? 1 : m[1] == '0.10' ? 11 : m[1] == '0.11' && m[2] < 8 ? 12 : 13;
+	}(process.version.match(/^v(\d+\.\d+)\.(\d+)$/)));
+
+	var lib = __dirname + '/out/node_ios_device_v' + modulesVer;
 
 	var file = path.resolve(lib + '.node');
 	if (!fs.existsSync(file)) {
