@@ -107,6 +107,8 @@ exports.trackDevices = function trackDevices(callback) {
 /**
  * Installs an iOS app on the specified device.
  *
+ * @param {String} udid - The device udid to install the app to
+ * @param {String} appPath - The path to iOS .app directory to install
  * @param {Function} callback(err) - A function to call when the install finishes
  */
 exports.installApp = function installApp(udid, appPath, callback) {
@@ -131,4 +133,39 @@ exports.installApp = function installApp(udid, appPath, callback) {
 	} catch (ex) {
 		callback(ex);
 	}
+};
+
+/**
+ * Forwards the specified iOS device's log messages.
+ *
+ * @param {String} udid - The device udid to forward log messages
+ * @param {Function} callback(err) - A function to call with each log message
+ */
+exports.log = function log(udid, callback) {
+	if (process.platform != 'darwin') {
+		return callback(new Error('OS "' + process.platform + '" not supported'));
+	}
+
+	loadIosDeviceModule();
+
+	// if we're not already pumping, start up the pumper
+	if (!pumping) {
+		interval = setInterval(iosDeviceModule.pumpRunLoop, exports.pumpInterval);
+	}
+	pumping++;
+
+	var off = false;
+
+	iosDeviceModule.log(udid, function (msg) {
+		off || callback(msg);
+	});
+
+	// return the off() function
+	return function () {
+		if (!off) {
+			off = true;
+			pumping = Math.max(pumping - 1, 0);
+			pumping || clearInterval(interval);
+		}
+	};
 };

@@ -6,9 +6,12 @@ Queries connected iOS devices and installs apps.
 
 ## Prerequisites
 
-node-ios-device requires [Node.js](http://nodejs.org/dist/) v0.8 or newer including v0.11 (unstable).
+node-ios-device is compatible with [Node.js](http://nodejs.org/dist/) 0.8.x,
+0.10.x, and 0.11.x (unstable).
 
-Currently, only Mac OS X is supported.
+Currently, only Mac OS X is supported. Someday we may support Windows. You can
+still include this module as an npm dependency regardless of the operating
+system you are installing your module.
 
 ## Installation
 
@@ -25,6 +28,12 @@ From Source:
 	git clone https://github.com/appcelerator/node-ios-device.git
 	cd node-ios-device
 	make
+
+Note: The binaries are already precompiled and bundled with the node-ios-device
+package. This may be un-node like, but makes life so much easier when this
+module is being download on Linux or Windows, especially when you don't have the
+build tools installed. There should be no need to rebuild node-ios-device unless
+a new Node.js version is released or you want to make some customizations.
 
 ## Example
 
@@ -51,6 +60,11 @@ From Source:
 		}
 	});
 
+	// dump the syslog output to the console
+	iosDevice.log('<device udid>', function (msg) {
+		console.log(msg);
+	});
+
 ## API
 
 ### devices(callback)
@@ -68,7 +82,7 @@ Device objects contain the following information:
 * `buildVersion` - The build version (e.g. "10B350")
 * `cpuArchitecture` - The CPU architecture (e.g. "armv7s")
 * `deviceClass` - The type of device (e.g. "iPhone", "iPad")
-* `deviceColor` - The color of the device (e.g. "black")
+* `deviceColor` - The color of the device (e.g. "black", "white")
 * `hardwareModel` - The device module (e.g. "[N41AP](http://theiphonewiki.com/wiki/N41ap)")
 * `modelNumber` - The model number (e.g. "MD636")
 * `productType` - The product type or model id (e.g. "iPhone5,1")
@@ -111,6 +125,47 @@ Installs an iOS app on the specified device.
 Currently, an `appPath` that begins with `~` is not supported.
 
 The `appPath` must resolve to an iOS .app, not the .ipa file.
+
+### log(udid, callback)
+
+Relays the iOS device's syslog line-by-line to the specified callback. The
+callback is fired for every line. Empty lines are omitted.
+
+* `{String} udid` - The devices udid
+* `{Function} callback(msg)` - A function to call with each line from the syslog
+	* `{String} msg` - The line from the syslog
+
+Returns a function to discontinue relaying the log output:
+
+	var off = iosDevice.log('<device udid>', function (msg) {
+		console.log(msg);
+	});
+
+	setTimeout(function () {
+		// turn off logging after 1 minute
+		off();
+	}, 60000);
+
+After calling `log()`, it will print out several older messages. If you are only
+interested in new messages, then you'll have to have use a timer and some sort
+of ready flag like this:
+
+	var ready = false;
+	var lastMsg = Date.now();
+	var timer = null;
+
+	iosDevice.log('<device udid>', function (msg) {
+		if (ready) {
+			console.log(msg);
+		} else {
+			clearTimeout(timer);
+			timer = setTimeout(function () {
+				ready = true;
+			}, 500);
+		}
+	});
+
+
 
 ## License
 

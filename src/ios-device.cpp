@@ -77,14 +77,18 @@ class Device {
 public:
 	am_device device;
 	Persistent<Object> props;
+	service_conn_t connection;
+	CFSocketRef socket;
+	CFRunLoopSourceRef source;
+	Listener* logCallback;
 
-	Device(am_device& dev) : device(dev) {
+	Device(am_device& dev) : device(dev), socket(NULL), source(NULL), logCallback(NULL) {
 		X_ASSIGN_PERSISTENT(Object, props, Object::New());
 	}
 
 	// fetches info from the device and populates the JavaScript object
 	void populate(CFStringRef udid) {
-		Local<Object> p = Local<Object>::New(Object::New());
+		Local<Object> p = Local<Object>::New(X_ISOLATE_PRE Object::New());
 
 		char* str = cfstring_to_cstr(udid);
 		if (str != NULL) {
@@ -226,24 +230,59 @@ void on_device_notification(am_device_notification_callback_info* info, void* ar
 			udid = AMDeviceCopyDeviceIdentifier(info->dev);
 			if (!CFDictionaryContainsKey(connected_devices, udid)) {
 				// connect to the device and get its information
-				AMDeviceConnect(info->dev);
-				if (AMDeviceIsPaired(info->dev) && AMDeviceValidatePairing(info->dev) == MDERR_OK && AMDeviceStartSession(info->dev) == MDERR_OK) {
-					Device* device = new Device(info->dev);
-					device->populate(udid);
-					CFDictionarySetValue(connected_devices, udid, device);
-					AMDeviceStopSession(info->dev);
-					devices_changed = true;
+				if (AMDeviceConnect(info->dev) == MDERR_OK) {
+					if (AMDeviceIsPaired(info->dev) != 1 && AMDevicePair(info->dev) != 1) {
+						return;
+					}
+
+					if (AMDeviceValidatePairing(info->dev) != MDERR_OK) {
+						if (AMDevicePair(info->dev) != 1) {
+							return;
+						}
+						if (AMDeviceValidatePairing(info->dev) != MDERR_OK) {
+							return;
+						}
+					}
+
+					if (AMDeviceStartSession(info->dev) == MDERR_OK) {
+						Device* device = new Device(info->dev);
+						device->populate(udid);
+						CFDictionarySetValue(connected_devices, udid, device);
+						devices_changed = true;
+					}
 				}
-				AMDeviceDisconnect(info->dev);
-			}
+
+/*
+				if (AMDeviceConnect(info->dev) == MDERR_OK) {
+					if (AMDeviceIsPaired(info->dev) && AMDeviceValidatePairing(info->dev) == MDERR_OK && AMDeviceStartSession(info->dev) == MDERR_OK) {
+						Device* device = new Device(info->dev);
+						device->populate(udid);
+						CFDictionarySetValue(connected_devices, udid, device);
+//						AMDeviceStopSession(info->dev);
+						devices_changed = true;
+					}
+//					AMDeviceDisconnect(info->dev);
+				}
+*/			}
 			break;
 
 		case ADNCI_MSG_DISCONNECTED:
 			udid = AMDeviceCopyDeviceIdentifier(info->dev);
 			if (CFDictionaryContainsKey(connected_devices, udid)) {
 				// remove the device from the dictionary and destroy it
-				const Device* device = (const Device*)CFDictionaryGetValue(connected_devices, udid);
+				Device* device = (Device*)CFDictionaryGetValue(connected_devices, udid);
 				CFDictionaryRemoveValue(connected_devices, udid);
+
+				if (device->logCallback) {
+					delete device->logCallback;
+				}
+				if (device->source) {
+					CFRelease(device->source);
+				}
+				if (device->socket) {
+					CFRelease(device->socket);
+				}
+
 				delete device;
 				devices_changed = true;
 			}
@@ -313,58 +352,7 @@ X_METHOD(installApp) {
 	CFRelease(appPathStr);
 	CFRelease(relativeUrl);
 
-	// connect to the device
-	mach_error_t rval = AMDeviceConnect(*device);
-	if (rval == MDERR_SYSCALL) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: setsockopt() failed"))));
-	} else if (rval == MDERR_QUERY_FAILED) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: the daemon query failed"))));
-	} else if (rval == MDERR_INVALID_ARGUMENT) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: invalid argument, USBMuxConnectByPort returned 0xffffffff"))));
-	} else if (rval != MDERR_OK) {
-		snprintf(tmp, 256, "Failed to connect to device (0x%x)", rval);
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
-	}
-
-	// make sure we're paired
-	rval = AMDeviceIsPaired(*device);
-	if (rval != 1) {
-		rval = AMDevicePair(*device);
-		if (rval != 1) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired"))));
-		}
-	}
-
-	// double check the pairing
-	rval = AMDeviceValidatePairing(*device);
-	if (rval != MDERR_OK) {
-		rval = AMDevicePair(*device);
-		if (rval != 1) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to pair device"))));
-		} else {
-			rval = AMDeviceValidatePairing(*device);
-			if (rval == MDERR_INVALID_ARGUMENT) {
-				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: the device is null"))));
-			} else if (rval == MDERR_DICT_NOT_LOADED) {
-				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: load_dict() failed"))));
-			} else if (rval != MDERR_OK) {
-				snprintf(tmp, 256, "Device is not paired (0x%x)", rval);
-				X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
-			}
-		}
-	}
-
-	// start the session
-	rval = AMDeviceStartSession(*device);
-	if (rval == MDERR_INVALID_ARGUMENT) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: the lockdown connection has not been established"))));
-	} else if (rval == MDERR_DICT_NOT_LOADED) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: load_dict() failed"))));
-	} else if (rval != MDERR_OK) {
-		snprintf(tmp, 256, "Failed to start session (0x%x)", rval);
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
-	}
-
+	mach_error_t rval;
 	CFStringRef keys[] = { CFSTR("PackageType") };
 	CFStringRef values[] = { CFSTR("Developer") };
 	CFDictionaryRef options = CFDictionaryCreate(NULL, (const void **)&keys, (const void **)&values, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -374,7 +362,6 @@ X_METHOD(installApp) {
 	if (rval != MDERR_OK) {
 		CFRelease(options);
 		CFRelease(localUrl);
-		AMDeviceDisconnect(*device);
 		if (rval == -402653177) {
 			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to copy app to device: can't install app that contains symlinks"))));
 		} else {
@@ -388,7 +375,6 @@ X_METHOD(installApp) {
 	if (rval != MDERR_OK) {
 		CFRelease(options);
 		CFRelease(localUrl);
-		AMDeviceDisconnect(*device);
 		if (rval == -402620395) {
 			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to install app on device: most likely a provisioning profile issue"))));
 		} else {
@@ -400,7 +386,144 @@ X_METHOD(installApp) {
 	// cleanup
 	CFRelease(options);
 	CFRelease(localUrl);
-	AMDeviceDisconnect(*device);
+
+	X_RETURN_UNDEFINED();
+}
+
+/**
+ * Handles new data from the socket when listening for a device's syslog messages.
+ */
+void SocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info) {
+	Device* device = (Device*)info;
+	Local<Function> callback = Local<Function>::New(X_ISOLATE_PRE device->logCallback->callback);
+	CFIndex length = CFDataGetLength((CFDataRef)data);
+	const char *buffer = (const char*)CFDataGetBytePtr((CFDataRef)data);
+	char* str = new char[length + 1];
+	long i = 0;
+	long j = 0;
+	char c;
+	Handle<Value> argv[1];
+
+	while (length) {
+		while (*buffer == '\0') {
+			buffer++;
+			length--;
+			if (length == 0)
+				return;
+		}
+
+		i = j = 0;
+
+		while (i < length) {
+			c = str[j] = buffer[i++];
+			if (c == '\n' || c == '\0') {
+				str[j] = '\0';
+				if (j > 0) {
+					argv[0] = String::New(str);
+					callback->Call(Context::GetCurrent()->Global(), 1, argv);
+				}
+				j = 0;
+				if (c == '\0') {
+					break;
+				}
+			} else {
+				++j;
+			}
+		}
+
+		length -= i;
+		buffer += i;
+	}
+
+	delete[] str;
+}
+
+/*
+ * log()
+ * Connects to the device and fires the callback with each line of output from
+ * the device's syslog.
+ */
+X_METHOD(log) {
+	char tmp[256];
+
+	if (args.Length() < 2 || args[0]->IsUndefined() || args[1]->IsUndefined()) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Missing required arguments \'udid\' and \'appPath\'"))));
+	}
+
+	// validate the 'udid'
+	if (!args[0]->IsString()) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Argument \'udid\' must be a string"))));
+	}
+
+	Handle<String> udidHandle = Handle<String>::Cast(args[0]);
+	if (udidHandle->Length() == 0) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("The \'udid\' must not be an empty string"))));
+	}
+
+	String::Utf8Value udidValue(udidHandle->ToString());
+	char* udid = *udidValue;
+	CFStringRef udidStr = CFStringCreateWithCString(NULL, (char*)*udidValue, kCFStringEncodingUTF8);
+
+	if (!CFDictionaryContainsKey(connected_devices, (const void*)udidStr)) {
+		CFRelease(udidStr);
+		snprintf(tmp, 256, "Device \'%s\' not connected", udid);
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+	}
+
+	if (!args[1]->IsFunction()) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Argument \'callback\' must be a function"))));
+	}
+
+	Listener* logCallback = new Listener;
+	X_ASSIGN_PERSISTENT(Function, logCallback->callback, Local<Function>::Cast(args[1]));
+
+	Device* deviceObj = (Device*)CFDictionaryGetValue(connected_devices, udidStr);
+	CFRelease(udidStr);
+
+	am_device* device = &deviceObj->device;
+	mach_error_t rval;
+	service_conn_t connection;
+
+	rval = AMDeviceStartService(*device, CFSTR(AMSVC_SYSLOG_RELAY), &connection, NULL);
+	if (rval != MDERR_OK) {
+		AMDeviceStopSession(*device);
+		if (rval == MDERR_SYSCALL) {
+			snprintf(tmp, 256, "Failed to start \"%s\" service due to system call error (0x%x)", AMSVC_SYSLOG_RELAY, rval);
+		} else if (rval == MDERR_INVALID_ARGUMENT) {
+			snprintf(tmp, 256, "Failed to start \"%s\" service due to invalid argument (0x%x)", AMSVC_SYSLOG_RELAY, rval);
+		} else {
+			snprintf(tmp, 256, "Failed to start \"%s\" service (0x%x)", AMSVC_SYSLOG_RELAY, rval);
+		}
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+	}
+
+	CFSocketContext socketCtx = { 0, device, NULL, NULL, NULL };
+	CFSocketRef socket = CFSocketCreateWithNative(kCFAllocatorDefault, connection, kCFSocketDataCallBack, SocketCallback, &socketCtx);
+	if (!socket) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to create socket"))));
+	}
+
+	CFRunLoopSourceRef source = CFSocketCreateRunLoopSource(kCFAllocatorDefault, socket, 0);
+	if (!source) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to create socket run loop source"))));
+	}
+
+	CFRunLoopAddSource(CFRunLoopGetMain(), source, kCFRunLoopCommonModes);
+
+	if (deviceObj->logCallback) {
+		delete deviceObj->logCallback;
+	}
+	if (deviceObj->source) {
+		CFRelease(deviceObj->source);
+	}
+	if (deviceObj->socket) {
+		CFRelease(deviceObj->socket);
+	}
+
+	deviceObj->connection = connection;
+	deviceObj->socket = socket;
+	deviceObj->source = source;
+	deviceObj->logCallback = logCallback;
 
 	X_RETURN_UNDEFINED();
 }
@@ -410,10 +533,11 @@ X_METHOD(installApp) {
  * to the device notifications.
  */
 void init(Handle<Object> exports) {
-	exports->Set(String::NewSymbol("on"), FunctionTemplate::New(on)->GetFunction());
+	exports->Set(String::NewSymbol("on"),          FunctionTemplate::New(on)->GetFunction());
 	exports->Set(String::NewSymbol("pumpRunLoop"), FunctionTemplate::New(pump_run_loop)->GetFunction());
-	exports->Set(String::NewSymbol("devices"), FunctionTemplate::New(devices)->GetFunction());
-	exports->Set(String::NewSymbol("installApp"), FunctionTemplate::New(installApp)->GetFunction());
+	exports->Set(String::NewSymbol("devices"),     FunctionTemplate::New(devices)->GetFunction());
+	exports->Set(String::NewSymbol("installApp"),  FunctionTemplate::New(installApp)->GetFunction());
+	exports->Set(String::NewSymbol("log"),         FunctionTemplate::New(log)->GetFunction());
 
 	listeners = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
 	connected_devices = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);

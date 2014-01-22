@@ -232,7 +232,7 @@ mach_error_t AMDeviceStartSession(
 mach_error_t AMDeviceStartService(
 	am_device device,
 	CFStringRef service_name,
-	am_service *handle,
+	service_conn_t *handle,
 	uint32_t *unknown);
 
 /* Stops a session. You should do this before accessing services.
