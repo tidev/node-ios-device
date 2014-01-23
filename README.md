@@ -151,7 +151,6 @@ interested in new messages, then you'll have to have use a timer and some sort
 of ready flag like this:
 
 	var ready = false;
-	var lastMsg = Date.now();
 	var timer = null;
 
 	iosDevice.log('<device udid>', function (msg) {
