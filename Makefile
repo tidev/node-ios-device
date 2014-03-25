@@ -12,7 +12,7 @@ node_ios_device_v1: check_env
 
 # Node.js 0.10.x
 node_ios_device_v11: check_env
-	node-gyp configure --target=0.10.21
+	node-gyp configure --target=0.10.26
 	node-gyp build node_ios_device_v11
 	mkdir -p out
 	cp build/Release/node_ios_device_v11.node out/

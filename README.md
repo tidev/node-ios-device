@@ -6,12 +6,20 @@ Queries connected iOS devices and installs apps.
 
 ## Prerequisites
 
-node-ios-device is compatible with [Node.js](http://nodejs.org/dist/) 0.8.x,
-0.10.x, and 0.11.x (unstable).
+node-ios-device is currently compatible with the following Node.js versions:
+
+ * 0.8.0 - 0.8.26 (module API v1)
+ * 0.10.0 - 0.10.26 (module API v11
+ * 0.11.0 - 0.11.7 (module API v12)
+ * 0.11.8 - 0.11.10 (module API v13)
+ * 0.11.11 - 0.11.12 (module API v14)
+
+To support newer module API versions, you will need to check for a new version
+of node-ios-device or build from source using the instructions below.
 
 Currently, only Mac OS X is supported. Someday we may support Windows. You can
-still include this module as an npm dependency regardless of the operating
-system you are installing your module.
+include this module as an npm dependency regardless of the operating system you
+are installing your module.
 
 ## Installation
 
@@ -25,6 +33,7 @@ From GitHub:
 
 From Source:
 
+	sudo npm install -g node-gyp
 	git clone https://github.com/appcelerator/node-ios-device.git
 	cd node-ios-device
 	make
