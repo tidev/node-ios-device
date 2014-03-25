@@ -27,6 +27,9 @@
 					},
 					{
 						'target_name': 'node_ios_device_v13'
+					},
+					{
+						'target_name': 'node_ios_device_v14'
 					}
 				]
 			}
