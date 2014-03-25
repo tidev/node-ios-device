@@ -169,3 +169,36 @@ exports.log = function log(udid, callback) {
 		}
 	};
 };
+
+/**
+ * ??????????
+ *
+ * @param {String} udid - The device udid to forward log messages
+ * @param {String} url - ????????
+ */
+exports.openURL = function openURL(udid, url) {
+	if (process.platform != 'darwin') {
+		return callback(new Error('OS "' + process.platform + '" not supported'));
+	}
+
+	loadIosDeviceModule();
+
+	iosDeviceModule.openURL(udid, url);
+
+	// if we're not already pumping, start up the pumper
+	if (!pumping) {
+		interval = setInterval(iosDeviceModule.pumpRunLoop, exports.pumpInterval);
+	}
+	pumping++;
+
+	var off = false;
+
+	// return the off() function
+	return function () {
+		if (!off) {
+			off = true;
+			pumping = Math.max(pumping - 1, 0);
+			pumping || clearInterval(interval);
+		}
+	};
+};

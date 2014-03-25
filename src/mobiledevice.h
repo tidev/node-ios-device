@@ -84,6 +84,7 @@ extern "C" {
 #define AMSVC_SCREENSHOT            "com.apple.screenshotr"
 #define AMSVC_SYSLOG_RELAY          "com.apple.syslog_relay"
 #define AMSVC_SYSTEM_PROFILER       "com.apple.mobile.system_profiler"
+#define AMSVC_WEB_INSPECTOR			"com.apple.webinspector"
 
 typedef uint32_t afc_error_t;
 typedef uint64_t afc_file_ref;

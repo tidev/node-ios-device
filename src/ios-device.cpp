@@ -251,19 +251,7 @@ void on_device_notification(am_device_notification_callback_info* info, void* ar
 						devices_changed = true;
 					}
 				}
-
-/*
-				if (AMDeviceConnect(info->dev) == MDERR_OK) {
-					if (AMDeviceIsPaired(info->dev) && AMDeviceValidatePairing(info->dev) == MDERR_OK && AMDeviceStartSession(info->dev) == MDERR_OK) {
-						Device* device = new Device(info->dev);
-						device->populate(udid);
-						CFDictionarySetValue(connected_devices, udid, device);
-//						AMDeviceStopSession(info->dev);
-						devices_changed = true;
-					}
-//					AMDeviceDisconnect(info->dev);
-				}
-*/			}
+			}
 			break;
 
 		case ADNCI_MSG_DISCONNECTED:
@@ -393,7 +381,7 @@ X_METHOD(installApp) {
 /**
  * Handles new data from the socket when listening for a device's syslog messages.
  */
-void SocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info) {
+void LogSocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info) {
 	Device* device = (Device*)info;
 	Local<Function> callback = Local<Function>::New(X_ISOLATE_PRE device->logCallback->callback);
 	CFIndex length = CFDataGetLength((CFDataRef)data);
@@ -498,7 +486,7 @@ X_METHOD(log) {
 	}
 
 	CFSocketContext socketCtx = { 0, device, NULL, NULL, NULL };
-	CFSocketRef socket = CFSocketCreateWithNative(kCFAllocatorDefault, connection, kCFSocketDataCallBack, SocketCallback, &socketCtx);
+	CFSocketRef socket = CFSocketCreateWithNative(kCFAllocatorDefault, connection, kCFSocketDataCallBack, LogSocketCallback, &socketCtx);
 	if (!socket) {
 		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to create socket"))));
 	}
@@ -528,6 +516,149 @@ X_METHOD(log) {
 	X_RETURN_UNDEFINED();
 }
 
+/**
+ * ???????????????????
+ */
+void OpenURLSocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info) {
+	CFIndex length = CFDataGetLength((CFDataRef)data);
+	const char *buffer = (const char*)CFDataGetBytePtr((CFDataRef)data);
+	printf("got data!\n");
+	printf("%ld\n", length);
+	printf("%s\n", buffer);
+}
+
+/*
+ * openURL()
+ * ?????????????????????????????????????
+ */
+X_METHOD(openURL) {
+	char tmp[256];
+
+	if (args.Length() < 2 || args[0]->IsUndefined() || args[1]->IsUndefined()) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Missing required arguments \'udid\' and \'appPath\'"))));
+	}
+
+	// validate the 'udid'
+	if (!args[0]->IsString()) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Argument \'udid\' must be a string"))));
+	}
+
+	Handle<String> udidHandle = Handle<String>::Cast(args[0]);
+	if (udidHandle->Length() == 0) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("The \'udid\' must not be an empty string"))));
+	}
+
+	String::Utf8Value udidValue(udidHandle->ToString());
+	char* udid = *udidValue;
+	CFStringRef udidStr = CFStringCreateWithCString(NULL, (char*)*udidValue, kCFStringEncodingUTF8);
+
+	if (!CFDictionaryContainsKey(connected_devices, (const void*)udidStr)) {
+		CFRelease(udidStr);
+		snprintf(tmp, 256, "Device \'%s\' not connected", udid);
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+	}
+
+	// validate the 'url'
+	if (!args[1]->IsString()) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Argument \'url\' must be a string"))));
+	}
+
+	Device* deviceObj = (Device*)CFDictionaryGetValue(connected_devices, udidStr);
+	CFRelease(udidStr);
+
+	am_device* device = &deviceObj->device;
+	mach_error_t rval;
+	service_conn_t connection;
+
+	rval = AMDeviceStartService(*device, CFSTR(AMSVC_WEB_INSPECTOR), &connection, NULL);
+	if (rval != MDERR_OK) {
+		AMDeviceStopSession(*device);
+		if (rval == MDERR_SYSCALL) {
+			snprintf(tmp, 256, "Failed to start \"%s\" service due to system call error (0x%x)", AMSVC_WEB_INSPECTOR, rval);
+		} else if (rval == MDERR_INVALID_ARGUMENT) {
+			snprintf(tmp, 256, "Failed to start \"%s\" service due to invalid argument (0x%x)", AMSVC_WEB_INSPECTOR, rval);
+		} else {
+			snprintf(tmp, 256, "Failed to start \"%s\" service (0x%x)", AMSVC_WEB_INSPECTOR, rval);
+		}
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+	}
+
+	CFSocketRef socket = CFSocketCreateWithNative(kCFAllocatorDefault, connection, kCFSocketDataCallBack, OpenURLSocketCallback, NULL);
+	if (!socket) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to create socket"))));
+	}
+
+	CFRunLoopSourceRef source = CFSocketCreateRunLoopSource(kCFAllocatorDefault, socket, 0);
+	if (!source) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to create socket run loop source"))));
+	}
+
+	CFRunLoopAddSource(CFRunLoopGetMain(), source, kCFRunLoopCommonModes);
+
+	CFPropertyListRef argumentKeys[] = { CFSTR("WIRConnectionIdentifierKey") };
+	CFPropertyListRef argumentValues[] = { CFSTR("020f74e1-df19-4037-acc2-d3dc32c936a7") };
+	CFDictionaryRef argumentDict = CFDictionaryCreate(NULL, (const void **)&argumentKeys, (const void **)&argumentValues, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+	CFPropertyListRef optionKeys[] = { CFSTR("__selector"), CFSTR("__argument") };
+	CFPropertyListRef optionValues[] = { CFSTR("_rpc_reportIdentifier:"), argumentDict };
+	CFDictionaryRef optionsDict = CFDictionaryCreate(NULL, (const void **)&optionKeys, (const void **)&optionValues, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+	CFErrorRef error = NULL;
+	CFDataRef options = CFPropertyListCreateData(NULL, optionsDict, kCFPropertyListBinaryFormat_v1_0, 0, &error);
+
+	CFStringRef lenStr = CFStringCreateWithFormat(NULL, NULL, CFSTR("%ld"), CFDataGetLength(options));
+	CFDataRef header = CFStringCreateExternalRepresentation(NULL, lenStr, kCFStringEncodingUTF8, 0);
+
+	CFSocketError socketError = CFSocketSendData(socket, NULL, header, 0);
+	if (socketError == kCFSocketError) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to send header"))));
+	} else if (socketError == kCFSocketTimeout) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Timed out while sending header"))));
+	}
+
+	socketError = CFSocketSendData(socket, NULL, options, 0);
+	if (socketError == kCFSocketError) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to send options"))));
+	} else if (socketError == kCFSocketTimeout) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Timed out while sending options"))));
+	}
+
+//	CFStringRef str = CFStringCreateFromExternalRepresentation(NULL, options, kCFStringEncodingUTF8);
+
+//	printf("----------\n");
+//	printf("%s\n", cfstring_to_cstr(str));
+
+/*
+
+
+	step = 8096 # split very big messages
+		start = 0
+		end = step
+		while end < len(wi):
+			PlistService._sendmsg(self, {
+				u'WIRPartialMessageKey': wi[start:end]
+			})
+			start = end
+			end += step
+		PlistService._sendmsg(self, {
+			u'WIRFinalMessageKey': wi[start:end]
+		})
+
+
+	def _sendmsg(self, msg):
+		endian = u'>I'
+		if self.bigendian:
+			endian = u'<I'
+		data = dict_to_plist_encoding(msg, self.format)
+		os.write(self.s, struct.pack(endian.encode(u'utf-8'), len(data)))
+		os.write(self.s, data)
+
+*/
+printf("fuck yeah\n");
+
+	X_RETURN_UNDEFINED();
+}
+
 /*
  * Wire up the JavaScript functions, initialize the dictionaries, and subscribe
  * to the device notifications.
@@ -538,6 +669,7 @@ void init(Handle<Object> exports) {
 	exports->Set(String::NewSymbol("devices"),     FunctionTemplate::New(devices)->GetFunction());
 	exports->Set(String::NewSymbol("installApp"),  FunctionTemplate::New(installApp)->GetFunction());
 	exports->Set(String::NewSymbol("log"),         FunctionTemplate::New(log)->GetFunction());
+	exports->Set(String::NewSymbol("openURL"),     FunctionTemplate::New(openURL)->GetFunction());
 
 	listeners = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
 	connected_devices = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
