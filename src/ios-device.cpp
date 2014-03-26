@@ -251,19 +251,7 @@ void on_device_notification(am_device_notification_callback_info* info, void* ar
 						devices_changed = true;
 					}
 				}
-
-/*
-				if (AMDeviceConnect(info->dev) == MDERR_OK) {
-					if (AMDeviceIsPaired(info->dev) && AMDeviceValidatePairing(info->dev) == MDERR_OK && AMDeviceStartSession(info->dev) == MDERR_OK) {
-						Device* device = new Device(info->dev);
-						device->populate(udid);
-						CFDictionarySetValue(connected_devices, udid, device);
-//						AMDeviceStopSession(info->dev);
-						devices_changed = true;
-					}
-//					AMDeviceDisconnect(info->dev);
-				}
-*/			}
+			}
 			break;
 
 		case ADNCI_MSG_DISCONNECTED:
@@ -546,7 +534,9 @@ void init(Handle<Object> exports) {
 	AMDeviceNotificationSubscribe(&on_device_notification, 0, 0, NULL, &notification);
 }
 
-#if NODE_MODULE_VERSION > 0x000C
+#if NODE_MODULE_VERSION > 0x000D
+  NODE_MODULE(node_ios_device_v14, init)
+#elif NODE_MODULE_VERSION > 0x000C
   NODE_MODULE(node_ios_device_v13, init)
 #elif NODE_MODULE_VERSION > 0x000B
   NODE_MODULE(node_ios_device_v12, init)
