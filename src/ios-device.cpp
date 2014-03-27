@@ -77,12 +77,13 @@ class Device {
 public:
 	am_device device;
 	Persistent<Object> props;
+	bool connected;
 	service_conn_t connection;
 	CFSocketRef socket;
 	CFRunLoopSourceRef source;
 	Listener* logCallback;
 
-	Device(am_device& dev) : device(dev), socket(NULL), source(NULL), logCallback(NULL) {
+	Device(am_device& dev) : device(dev), connected(false), socket(NULL), source(NULL), logCallback(NULL) {
 		X_ASSIGN_PERSISTENT(Object, props, Object::New());
 	}
 
@@ -249,7 +250,11 @@ void on_device_notification(am_device_notification_callback_info* info, void* ar
 						device->populate(udid);
 						CFDictionarySetValue(connected_devices, udid, device);
 						devices_changed = true;
+
+						AMDeviceStopSession(info->dev);
 					}
+
+					AMDeviceDisconnect(info->dev);
 				}
 			}
 			break;
@@ -341,6 +346,66 @@ X_METHOD(installApp) {
 	CFRelease(relativeUrl);
 
 	mach_error_t rval;
+
+	if (deviceObj->connected) {
+		AMDeviceStopSession(*device);
+		AMDeviceDisconnect(*device);
+	}
+
+	// connect to the device
+	rval = AMDeviceConnect(*device);
+	if (rval == MDERR_SYSCALL) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: setsockopt() failed"))));
+	} else if (rval == MDERR_QUERY_FAILED) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: the daemon query failed"))));
+	} else if (rval == MDERR_INVALID_ARGUMENT) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: invalid argument, USBMuxConnectByPort returned 0xffffffff"))));
+	} else if (rval != MDERR_OK) {
+		snprintf(tmp, 256, "Failed to connect to device (0x%x)", rval);
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+	}
+
+	// make sure we're paired
+	rval = AMDeviceIsPaired(*device);
+	if (rval != 1) {
+		rval = AMDevicePair(*device);
+		if (rval != 1) {
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired"))));
+		}
+	}
+
+	// double check the pairing
+	rval = AMDeviceValidatePairing(*device);
+	if (rval != MDERR_OK) {
+		rval = AMDevicePair(*device);
+		if (rval != 1) {
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to pair device"))));
+		} else {
+			rval = AMDeviceValidatePairing(*device);
+			if (rval == MDERR_INVALID_ARGUMENT) {
+				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: the device is null"))));
+			} else if (rval == MDERR_DICT_NOT_LOADED) {
+				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: load_dict() failed"))));
+			} else if (rval != MDERR_OK) {
+				snprintf(tmp, 256, "Device is not paired (0x%x)", rval);
+				X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+			}
+		}
+	}
+
+	// start the session
+	rval = AMDeviceStartSession(*device);
+	if (rval == MDERR_INVALID_ARGUMENT) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: the lockdown connection has not been established"))));
+	} else if (rval == MDERR_DICT_NOT_LOADED) {
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: load_dict() failed"))));
+	} else if (rval != MDERR_OK) {
+		snprintf(tmp, 256, "Failed to start session (0x%x)", rval);
+		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+	}
+
+	deviceObj->connected = true;
+
 	CFStringRef keys[] = { CFSTR("PackageType") };
 	CFStringRef values[] = { CFSTR("Developer") };
 	CFDictionaryRef options = CFDictionaryCreate(NULL, (const void **)&keys, (const void **)&values, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -348,6 +413,8 @@ X_METHOD(installApp) {
 	// copy .app to device
 	rval = AMDeviceSecureTransferPath(0, *device, localUrl, options, NULL, 0);
 	if (rval != MDERR_OK) {
+		AMDeviceStopSession(*device);
+		AMDeviceDisconnect(*device);
 		CFRelease(options);
 		CFRelease(localUrl);
 		if (rval == -402653177) {
@@ -361,6 +428,8 @@ X_METHOD(installApp) {
 	// install package on device
 	rval = AMDeviceSecureInstallApplication(0, *device, localUrl, options, NULL, 0);
 	if (rval != MDERR_OK) {
+		AMDeviceStopSession(*device);
+		AMDeviceDisconnect(*device);
 		CFRelease(options);
 		CFRelease(localUrl);
 		if (rval == -402620395) {
@@ -372,6 +441,9 @@ X_METHOD(installApp) {
 	}
 
 	// cleanup
+	AMDeviceStopSession(*device);
+	AMDeviceDisconnect(*device);
+	deviceObj->connected = false;
 	CFRelease(options);
 	CFRelease(localUrl);
 
@@ -472,6 +544,62 @@ X_METHOD(log) {
 	mach_error_t rval;
 	service_conn_t connection;
 
+	if (!deviceObj->connected) {
+		// connect to the device
+		rval = AMDeviceConnect(*device);
+		if (rval == MDERR_SYSCALL) {
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: setsockopt() failed"))));
+		} else if (rval == MDERR_QUERY_FAILED) {
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: the daemon query failed"))));
+		} else if (rval == MDERR_INVALID_ARGUMENT) {
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: invalid argument, USBMuxConnectByPort returned 0xffffffff"))));
+		} else if (rval != MDERR_OK) {
+			snprintf(tmp, 256, "Failed to connect to device (0x%x)", rval);
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+		}
+
+		// make sure we're paired
+		rval = AMDeviceIsPaired(*device);
+		if (rval != 1) {
+			rval = AMDevicePair(*device);
+			if (rval != 1) {
+				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired"))));
+			}
+		}
+
+		// double check the pairing
+		rval = AMDeviceValidatePairing(*device);
+		if (rval != MDERR_OK) {
+			rval = AMDevicePair(*device);
+			if (rval != 1) {
+				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to pair device"))));
+			} else {
+				rval = AMDeviceValidatePairing(*device);
+				if (rval == MDERR_INVALID_ARGUMENT) {
+					X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: the device is null"))));
+				} else if (rval == MDERR_DICT_NOT_LOADED) {
+					X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: load_dict() failed"))));
+				} else if (rval != MDERR_OK) {
+					snprintf(tmp, 256, "Device is not paired (0x%x)", rval);
+					X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+				}
+			}
+		}
+
+		// start the session
+		rval = AMDeviceStartSession(*device);
+		if (rval == MDERR_INVALID_ARGUMENT) {
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: the lockdown connection has not been established"))));
+		} else if (rval == MDERR_DICT_NOT_LOADED) {
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: load_dict() failed"))));
+		} else if (rval != MDERR_OK) {
+			snprintf(tmp, 256, "Failed to start session (0x%x)", rval);
+			X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+		}
+
+		deviceObj->connected = true;
+	}
+
 	rval = AMDeviceStartService(*device, CFSTR(AMSVC_SYSLOG_RELAY), &connection, NULL);
 	if (rval != MDERR_OK) {
 		AMDeviceStopSession(*device);
@@ -484,6 +612,10 @@ X_METHOD(log) {
 		}
 		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
 	}
+
+	AMDeviceStopSession(*device);
+	AMDeviceDisconnect(*device);
+	deviceObj->connected = false;
 
 	CFSocketContext socketCtx = { 0, device, NULL, NULL, NULL };
 	CFSocketRef socket = CFSocketCreateWithNative(kCFAllocatorDefault, connection, kCFSocketDataCallBack, SocketCallback, &socketCtx);
