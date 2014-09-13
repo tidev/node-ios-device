@@ -1,42 +1,17 @@
 /**
  * node-ios-device
- * Copyright (c) 2013 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2013-2014 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Apache Public License
  * Please see the LICENSE included with this distribution for details.
  */
 
+#include <nan.h>
 #include <node.h>
 #include <v8.h>
 #include <stdlib.h>
 #include "mobiledevice.h"
 
 using namespace v8;
-
-/*
- * In Node.js 0.11 and newer, they updated V8 which changed the API. These
- * macros below try to mask the difference between the old and new APIs.
- */
-#if NODE_MODULE_VERSION > 0x000B
-
-static v8::Isolate* the_isolate = v8::Isolate::GetCurrent();
-
-#  define X_METHOD(name) void name(const v8::FunctionCallbackInfo<v8::Value>& args)
-#  define X_RETURN_UNDEFINED() return
-#  define X_RETURN_VALUE(value) return args.GetReturnValue().Set(value)
-#  define X_ASSIGN_PERSISTENT(type, handle, obj) handle.Reset(the_isolate, obj)
-#  define X_HANDLE_SCOPE(scope) HandleScope scope(the_isolate)
-#  define X_ISOLATE_PRE the_isolate,
-
-#else
-
-#  define X_METHOD(name) v8::Handle<v8::Value> name(const v8::Arguments& args)
-#  define X_RETURN_UNDEFINED() return v8::Undefined()
-#  define X_RETURN_VALUE(value) return value
-#  define X_ASSIGN_PERSISTENT(type, handle, obj) handle = v8::Persistent<type>::New(obj)
-#  define X_HANDLE_SCOPE(scope) HandleScope scope
-#  define X_ISOLATE_PRE
-
-#endif
 
 /*
  * A struct to track listener properties such as the JavaScript callback
@@ -78,22 +53,23 @@ public:
 	am_device device;
 	Persistent<Object> props;
 	bool connected;
-	service_conn_t connection;
-	CFSocketRef socket;
-	CFRunLoopSourceRef source;
+
+	service_conn_t logConnection;
+	CFSocketRef logSocket;
+	CFRunLoopSourceRef logSource;
 	Listener* logCallback;
 
-	Device(am_device& dev) : device(dev), connected(false), socket(NULL), source(NULL), logCallback(NULL) {
-		X_ASSIGN_PERSISTENT(Object, props, Object::New());
+	Device(am_device& dev) : device(dev), connected(false), logSocket(NULL), logSource(NULL), logCallback(NULL) {
+		NanAssignPersistent<Object>(props, NanNew<Object>());
 	}
 
 	// fetches info from the device and populates the JavaScript object
 	void populate(CFStringRef udid) {
-		Local<Object> p = Local<Object>::New(X_ISOLATE_PRE Object::New());
+		Local<Object> p = NanNew<Object>();
 
 		char* str = cfstring_to_cstr(udid);
 		if (str != NULL) {
-			p->Set(String::NewSymbol("udid"), String::New(str));
+			p->Set(NanNew("udid"), NanNew(str));
 			free(str);
 		}
 
@@ -108,7 +84,7 @@ public:
 		this->getProp(p, "productVersion",  CFSTR("ProductVersion"));
 		this->getProp(p, "serialNumber",    CFSTR("SerialNumber"));
 
-		X_ASSIGN_PERSISTENT(Object, props, p);
+		NanAssignPersistent<Object>(props, p);
 	}
 
 private:
@@ -118,7 +94,7 @@ private:
 			char* str = cfstring_to_cstr(value);
 			CFRelease(value);
 			if (str != NULL) {
-				p->Set(String::NewSymbol(propName), String::New(str));
+				p->Set(NanNew(propName), NanNew(str));
 				free(str);
 			}
 		}
@@ -129,14 +105,14 @@ private:
  * on()
  * Defines a JavaScript function that adds an event listener.
  */
-X_METHOD(on) {
+NAN_METHOD(on) {
 	if (args.Length() >= 2) {
 		if (!args[0]->IsString()) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Argument \'event\' must be a string"))));
+			return NanThrowError(Exception::Error(NanNew("Argument \'event\' must be a string")));
 		}
 
 		if (!args[1]->IsFunction()) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Argument \'callback\' must be a function"))));
+			return NanThrowError(Exception::Error(NanNew("Argument \'callback\' must be a function")));
 		}
 
 		Handle<String> event = Handle<String>::Cast(args[0]);
@@ -144,11 +120,11 @@ X_METHOD(on) {
 		CFStringRef eventName = CFStringCreateWithCString(NULL, (char*)*str, kCFStringEncodingUTF8);
 
 		Listener* listener = new Listener;
-		X_ASSIGN_PERSISTENT(Function, listener->callback, Local<Function>::Cast(args[1]));
+		NanAssignPersistent<Function>(listener->callback, Local<Function>::Cast(args[1]));
 		CFDictionarySetValue(listeners, eventName, listener);
 	}
 
-	X_RETURN_UNDEFINED();
+	NanReturnUndefined();
 }
 
 /*
@@ -165,8 +141,8 @@ void emit(const char* event) {
 		if (CFStringCompare(keys[i], eventStr, 0) == kCFCompareEqualTo) {
 			const Listener* listener = (const Listener*)CFDictionaryGetValue(listeners, keys[i]);
 			if (listener != NULL) {
-				Local<Function> callback = Local<Function>::New(X_ISOLATE_PRE listener->callback);
-				callback->Call(Context::GetCurrent()->Global(), 0, NULL);
+				Local<Function> callback = NanNew<Function>(listener->callback);
+				callback->Call(NanGetCurrentContext()->Global(), 0, NULL);
 			}
 		}
 	}
@@ -178,7 +154,7 @@ void emit(const char* event) {
  * pumpRunLoop()
  * Defines a JavaScript function that processes all pending notifications.
  */
-X_METHOD(pump_run_loop) {
+NAN_METHOD(pump_run_loop) {
 	CFTimeInterval interval = 0.25;
 
 	if (args.Length() > 0 && args[0]->IsNumber()) {
@@ -194,7 +170,7 @@ X_METHOD(pump_run_loop) {
 		emit("devicesChanged");
 	}
 
-	X_RETURN_UNDEFINED();
+	NanReturnUndefined();
 }
 
 /*
@@ -202,9 +178,9 @@ X_METHOD(pump_run_loop) {
  * Defines a JavaScript function that returns a JavaScript array of iOS devices.
  * This should be called after pumpRunLoop() has been called.
  */
-X_METHOD(devices) {
-	X_HANDLE_SCOPE(scope);
-	Handle<Array> result = Array::New();
+NAN_METHOD(devices) {
+	NanScope();
+	Handle<Array> result = NanNew<Array>();
 
 	CFIndex size = CFDictionaryGetCount(connected_devices);
 	Device** values = (Device**)malloc(size * sizeof(Device*));
@@ -212,12 +188,12 @@ X_METHOD(devices) {
 
 	for (CFIndex i = 0; i < size; i++) {
 		Persistent<Object>* obj = &values[i]->props;
-		result->Set(i, Local<Object>::New(X_ISOLATE_PRE *obj));
+		result->Set(i, NanNew<Object>(*obj));
 	}
 
 	free(values);
 
-	X_RETURN_VALUE(scope.Close(result));
+	NanReturnValue(result);
 }
 
 /*
@@ -269,11 +245,11 @@ void on_device_notification(am_device_notification_callback_info* info, void* ar
 				if (device->logCallback) {
 					delete device->logCallback;
 				}
-				if (device->source) {
-					CFRelease(device->source);
+				if (device->logSource) {
+					CFRelease(device->logSource);
 				}
-				if (device->socket) {
-					CFRelease(device->socket);
+				if (device->logSocket) {
+					CFRelease(device->logSocket);
 				}
 
 				delete device;
@@ -288,21 +264,21 @@ void on_device_notification(am_device_notification_callback_info* info, void* ar
  * Defines a JavaScript function that installs an iOS app on the specified device.
  * This should be called after pumpRunLoop() has been called.
  */
-X_METHOD(installApp) {
+NAN_METHOD(installApp) {
 	char tmp[256];
 
 	if (args.Length() < 2 || args[0]->IsUndefined() || args[1]->IsUndefined()) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Missing required arguments \'udid\' and \'appPath\'"))));
+		return NanThrowError(Exception::Error(NanNew("Missing required arguments \'udid\' and \'appPath\'")));
 	}
 
 	// validate the 'udid'
 	if (!args[0]->IsString()) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Argument \'udid\' must be a string"))));
+		return NanThrowError(Exception::Error(NanNew("Argument \'udid\' must be a string")));
 	}
 
 	Handle<String> udidHandle = Handle<String>::Cast(args[0]);
 	if (udidHandle->Length() == 0) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("The \'udid\' must not be an empty string"))));
+		return NanThrowError(Exception::Error(NanNew("The \'udid\' must not be an empty string")));
 	}
 
 	String::Utf8Value udidValue(udidHandle->ToString());
@@ -312,7 +288,7 @@ X_METHOD(installApp) {
 	if (!CFDictionaryContainsKey(connected_devices, (const void*)udidStr)) {
 		CFRelease(udidStr);
 		snprintf(tmp, 256, "Device \'%s\' not connected", udid);
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+		return NanThrowError(Exception::Error(NanNew(tmp)));
 	}
 
 	Device* deviceObj = (Device*)CFDictionaryGetValue(connected_devices, udidStr);
@@ -321,21 +297,21 @@ X_METHOD(installApp) {
 
 	// validate the 'appPath'
 	if (!args[1]->IsString()) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Argument \'appPath\' must be a string"))));
+		return NanThrowError(Exception::Error(NanNew("Argument \'appPath\' must be a string")));
 	}
 
 	Handle<String> appPathHandle = Handle<String>::Cast(args[1]);
 	if (appPathHandle->Length() == 0) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("The \'appPath\' must not be an empty string"))));
+		return NanThrowError(Exception::Error(NanNew("The \'appPath\' must not be an empty string")));
 	}
 
 	String::Utf8Value appPathValue(appPathHandle->ToString());
 	char* appPath = *appPathValue;
 
 	// check the file exists
-	if (access(appPath, F_OK) != 0) {
+	if (::access(appPath, F_OK) != 0) {
 		snprintf(tmp, 256, "The app path \'%s\' does not exist", appPath);
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+		return NanThrowError(Exception::Error(NanNew(tmp)));
 	}
 
 	// get the path to the app
@@ -355,14 +331,14 @@ X_METHOD(installApp) {
 	// connect to the device
 	rval = AMDeviceConnect(*device);
 	if (rval == MDERR_SYSCALL) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: setsockopt() failed"))));
+		return NanThrowError(Exception::Error(NanNew("Failed to connect to device: setsockopt() failed")));
 	} else if (rval == MDERR_QUERY_FAILED) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: the daemon query failed"))));
+		return NanThrowError(Exception::Error(NanNew("Failed to connect to device: the daemon query failed")));
 	} else if (rval == MDERR_INVALID_ARGUMENT) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: invalid argument, USBMuxConnectByPort returned 0xffffffff"))));
+		return NanThrowError(Exception::Error(NanNew("Failed to connect to device: invalid argument, USBMuxConnectByPort returned 0xffffffff")));
 	} else if (rval != MDERR_OK) {
 		snprintf(tmp, 256, "Failed to connect to device (0x%x)", rval);
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+		return NanThrowError(Exception::Error(NanNew(tmp)));
 	}
 
 	// make sure we're paired
@@ -370,7 +346,7 @@ X_METHOD(installApp) {
 	if (rval != 1) {
 		rval = AMDevicePair(*device);
 		if (rval != 1) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired"))));
+			return NanThrowError(Exception::Error(NanNew("Device is not paired")));
 		}
 	}
 
@@ -379,16 +355,16 @@ X_METHOD(installApp) {
 	if (rval != MDERR_OK) {
 		rval = AMDevicePair(*device);
 		if (rval != 1) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to pair device"))));
+			return NanThrowError(Exception::Error(NanNew("Failed to pair device")));
 		} else {
 			rval = AMDeviceValidatePairing(*device);
 			if (rval == MDERR_INVALID_ARGUMENT) {
-				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: the device is null"))));
+				return NanThrowError(Exception::Error(NanNew("Device is not paired: the device is null")));
 			} else if (rval == MDERR_DICT_NOT_LOADED) {
-				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: load_dict() failed"))));
+				return NanThrowError(Exception::Error(NanNew("Device is not paired: load_dict() failed")));
 			} else if (rval != MDERR_OK) {
 				snprintf(tmp, 256, "Device is not paired (0x%x)", rval);
-				X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+				return NanThrowError(Exception::Error(NanNew(tmp)));
 			}
 		}
 	}
@@ -396,12 +372,12 @@ X_METHOD(installApp) {
 	// start the session
 	rval = AMDeviceStartSession(*device);
 	if (rval == MDERR_INVALID_ARGUMENT) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: the lockdown connection has not been established"))));
+		return NanThrowError(Exception::Error(NanNew("Failed to start session: the lockdown connection has not been established")));
 	} else if (rval == MDERR_DICT_NOT_LOADED) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: load_dict() failed"))));
+		return NanThrowError(Exception::Error(NanNew("Failed to start session: load_dict() failed")));
 	} else if (rval != MDERR_OK) {
 		snprintf(tmp, 256, "Failed to start session (0x%x)", rval);
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+		return NanThrowError(Exception::Error(NanNew(tmp)));
 	}
 
 	deviceObj->connected = true;
@@ -415,13 +391,14 @@ X_METHOD(installApp) {
 	if (rval != MDERR_OK) {
 		AMDeviceStopSession(*device);
 		AMDeviceDisconnect(*device);
+		deviceObj->connected = false;
 		CFRelease(options);
 		CFRelease(localUrl);
 		if (rval == -402653177) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to copy app to device: can't install app that contains symlinks"))));
+			return NanThrowError(Exception::Error(NanNew("Failed to copy app to device: can't install app that contains symlinks")));
 		} else {
 			snprintf(tmp, 256, "Failed to copy app to device (0x%x)", rval);
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+			return NanThrowError(Exception::Error(NanNew(tmp)));
 		}
 	}
 
@@ -430,13 +407,14 @@ X_METHOD(installApp) {
 	if (rval != MDERR_OK) {
 		AMDeviceStopSession(*device);
 		AMDeviceDisconnect(*device);
+		deviceObj->connected = false;
 		CFRelease(options);
 		CFRelease(localUrl);
 		if (rval == -402620395) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to install app on device: most likely a provisioning profile issue"))));
+			return NanThrowError(Exception::Error(NanNew("Failed to install app on device: most likely a provisioning profile issue")));
 		} else {
 			snprintf(tmp, 256, "Failed to install app on device (0x%x)", rval);
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+			return NanThrowError(Exception::Error(NanNew(tmp)));
 		}
 	}
 
@@ -447,15 +425,15 @@ X_METHOD(installApp) {
 	CFRelease(options);
 	CFRelease(localUrl);
 
-	X_RETURN_UNDEFINED();
+	NanReturnUndefined();
 }
 
 /**
  * Handles new data from the socket when listening for a device's syslog messages.
  */
-void SocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info) {
+void LogSocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info) {
 	Device* device = (Device*)info;
-	Local<Function> callback = Local<Function>::New(X_ISOLATE_PRE device->logCallback->callback);
+	Local<Function> callback = NanNew<Function>(device->logCallback->callback);
 	CFIndex length = CFDataGetLength((CFDataRef)data);
 	const char *buffer = (const char*)CFDataGetBytePtr((CFDataRef)data);
 	char* str = new char[length + 1];
@@ -479,8 +457,8 @@ void SocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address,
 			if (c == '\n' || c == '\0') {
 				str[j] = '\0';
 				if (j > 0) {
-					argv[0] = String::New(str);
-					callback->Call(Context::GetCurrent()->Global(), 1, argv);
+					argv[0] = NanNew(str);
+					callback->Call(NanGetCurrentContext()->Global(), 1, argv);
 				}
 				j = 0;
 				if (c == '\0') {
@@ -503,21 +481,21 @@ void SocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address,
  * Connects to the device and fires the callback with each line of output from
  * the device's syslog.
  */
-X_METHOD(log) {
+NAN_METHOD(log) {
 	char tmp[256];
 
 	if (args.Length() < 2 || args[0]->IsUndefined() || args[1]->IsUndefined()) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Missing required arguments \'udid\' and \'appPath\'"))));
+		return NanThrowError(Exception::Error(NanNew("Missing required arguments \'udid\' and \'appPath\'")));
 	}
 
 	// validate the 'udid'
 	if (!args[0]->IsString()) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Argument \'udid\' must be a string"))));
+		return NanThrowError(Exception::Error(NanNew("Argument \'udid\' must be a string")));
 	}
 
 	Handle<String> udidHandle = Handle<String>::Cast(args[0]);
 	if (udidHandle->Length() == 0) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("The \'udid\' must not be an empty string"))));
+		return NanThrowError(Exception::Error(NanNew("The \'udid\' must not be an empty string")));
 	}
 
 	String::Utf8Value udidValue(udidHandle->ToString());
@@ -527,15 +505,15 @@ X_METHOD(log) {
 	if (!CFDictionaryContainsKey(connected_devices, (const void*)udidStr)) {
 		CFRelease(udidStr);
 		snprintf(tmp, 256, "Device \'%s\' not connected", udid);
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+		return NanThrowError(Exception::Error(NanNew(tmp)));
 	}
 
 	if (!args[1]->IsFunction()) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Argument \'callback\' must be a function"))));
+		return NanThrowError(Exception::Error(NanNew("Argument \'callback\' must be a function")));
 	}
 
 	Listener* logCallback = new Listener;
-	X_ASSIGN_PERSISTENT(Function, logCallback->callback, Local<Function>::Cast(args[1]));
+	NanAssignPersistent<Function>(logCallback->callback, Local<Function>::Cast(args[1]));
 
 	Device* deviceObj = (Device*)CFDictionaryGetValue(connected_devices, udidStr);
 	CFRelease(udidStr);
@@ -548,14 +526,14 @@ X_METHOD(log) {
 		// connect to the device
 		rval = AMDeviceConnect(*device);
 		if (rval == MDERR_SYSCALL) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: setsockopt() failed"))));
+			return NanThrowError(Exception::Error(NanNew("Failed to connect to device: setsockopt() failed")));
 		} else if (rval == MDERR_QUERY_FAILED) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: the daemon query failed"))));
+			return NanThrowError(Exception::Error(NanNew("Failed to connect to device: the daemon query failed")));
 		} else if (rval == MDERR_INVALID_ARGUMENT) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to connect to device: invalid argument, USBMuxConnectByPort returned 0xffffffff"))));
+			return NanThrowError(Exception::Error(NanNew("Failed to connect to device: invalid argument, USBMuxConnectByPort returned 0xffffffff")));
 		} else if (rval != MDERR_OK) {
 			snprintf(tmp, 256, "Failed to connect to device (0x%x)", rval);
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+			return NanThrowError(Exception::Error(NanNew(tmp)));
 		}
 
 		// make sure we're paired
@@ -563,7 +541,7 @@ X_METHOD(log) {
 		if (rval != 1) {
 			rval = AMDevicePair(*device);
 			if (rval != 1) {
-				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired"))));
+				return NanThrowError(Exception::Error(NanNew("Device is not paired")));
 			}
 		}
 
@@ -572,16 +550,16 @@ X_METHOD(log) {
 		if (rval != MDERR_OK) {
 			rval = AMDevicePair(*device);
 			if (rval != 1) {
-				X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to pair device"))));
+				return NanThrowError(Exception::Error(NanNew("Failed to pair device")));
 			} else {
 				rval = AMDeviceValidatePairing(*device);
 				if (rval == MDERR_INVALID_ARGUMENT) {
-					X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: the device is null"))));
+					return NanThrowError(Exception::Error(NanNew("Device is not paired: the device is null")));
 				} else if (rval == MDERR_DICT_NOT_LOADED) {
-					X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Device is not paired: load_dict() failed"))));
+					return NanThrowError(Exception::Error(NanNew("Device is not paired: load_dict() failed")));
 				} else if (rval != MDERR_OK) {
 					snprintf(tmp, 256, "Device is not paired (0x%x)", rval);
-					X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+					return NanThrowError(Exception::Error(NanNew(tmp)));
 				}
 			}
 		}
@@ -589,12 +567,12 @@ X_METHOD(log) {
 		// start the session
 		rval = AMDeviceStartSession(*device);
 		if (rval == MDERR_INVALID_ARGUMENT) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: the lockdown connection has not been established"))));
+			return NanThrowError(Exception::Error(NanNew("Failed to start session: the lockdown connection has not been established")));
 		} else if (rval == MDERR_DICT_NOT_LOADED) {
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to start session: load_dict() failed"))));
+			return NanThrowError(Exception::Error(NanNew("Failed to start session: load_dict() failed")));
 		} else if (rval != MDERR_OK) {
 			snprintf(tmp, 256, "Failed to start session (0x%x)", rval);
-			X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+			return NanThrowError(Exception::Error(NanNew(tmp)));
 		}
 
 		deviceObj->connected = true;
@@ -610,22 +588,22 @@ X_METHOD(log) {
 		} else {
 			snprintf(tmp, 256, "Failed to start \"%s\" service (0x%x)", AMSVC_SYSLOG_RELAY, rval);
 		}
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New(tmp))));
+		return NanThrowError(Exception::Error(NanNew(tmp)));
 	}
 
 	AMDeviceStopSession(*device);
 	AMDeviceDisconnect(*device);
 	deviceObj->connected = false;
 
-	CFSocketContext socketCtx = { 0, device, NULL, NULL, NULL };
-	CFSocketRef socket = CFSocketCreateWithNative(kCFAllocatorDefault, connection, kCFSocketDataCallBack, SocketCallback, &socketCtx);
+	CFSocketContext socketCtx = { 0, deviceObj, NULL, NULL, NULL };
+	CFSocketRef socket = CFSocketCreateWithNative(kCFAllocatorDefault, connection, kCFSocketDataCallBack, LogSocketCallback, &socketCtx);
 	if (!socket) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to create socket"))));
+		return NanThrowError(Exception::Error(NanNew("Failed to create socket")));
 	}
 
 	CFRunLoopSourceRef source = CFSocketCreateRunLoopSource(kCFAllocatorDefault, socket, 0);
 	if (!source) {
-		X_RETURN_VALUE(ThrowException(Exception::Error(String::New("Failed to create socket run loop source"))));
+		return NanThrowError(Exception::Error(NanNew("Failed to create socket run loop source")));
 	}
 
 	CFRunLoopAddSource(CFRunLoopGetMain(), source, kCFRunLoopCommonModes);
@@ -633,19 +611,69 @@ X_METHOD(log) {
 	if (deviceObj->logCallback) {
 		delete deviceObj->logCallback;
 	}
-	if (deviceObj->source) {
-		CFRelease(deviceObj->source);
+	if (deviceObj->logSource) {
+		CFRelease(deviceObj->logSource);
 	}
-	if (deviceObj->socket) {
-		CFRelease(deviceObj->socket);
+	if (deviceObj->logSocket) {
+		CFRelease(deviceObj->logSocket);
 	}
 
-	deviceObj->connection = connection;
-	deviceObj->socket = socket;
-	deviceObj->source = source;
+	deviceObj->logConnection = connection;
+	deviceObj->logSocket = socket;
+	deviceObj->logSource = source;
 	deviceObj->logCallback = logCallback;
 
-	X_RETURN_UNDEFINED();
+	NanReturnUndefined();
+}
+
+/*
+ * shutdown()
+ * Cleans up any allocated memory.
+ */
+NAN_METHOD(shutdown) {
+	// free up connected devices
+	CFIndex size = CFDictionaryGetCount(connected_devices);
+	CFStringRef* keys = (CFStringRef*)malloc(size * sizeof(CFStringRef));
+	CFDictionaryGetKeysAndValues(connected_devices, (const void **)keys, NULL);
+	CFIndex i = 0;
+
+	for (; i < size; i++) {
+		Device* device = (Device*)CFDictionaryGetValue(connected_devices, keys[i]);
+		CFDictionaryRemoveValue(connected_devices, keys[i]);
+
+		if (device->connected) {
+			AMDeviceStopSession(device->device);
+			AMDeviceDisconnect(device->device);
+		}
+
+		if (device->logCallback) {
+			delete device->logCallback;
+		}
+		if (device->logSource) {
+			CFRelease(device->logSource);
+		}
+		if (device->logSocket) {
+			CFRelease(device->logSocket);
+		}
+
+		delete device;
+	}
+
+	free(keys);
+
+	// free up listeners
+	size = CFDictionaryGetCount(listeners);
+	keys = (CFStringRef*)malloc(size * sizeof(CFStringRef));
+	CFDictionaryGetKeysAndValues(listeners, (const void **)keys, NULL);
+	i = 0;
+
+	for (; i < size; i++) {
+		CFDictionaryRemoveValue(listeners, keys[i]);
+	}
+
+	free(keys);
+
+	NanReturnUndefined();
 }
 
 /*
@@ -653,11 +681,12 @@ X_METHOD(log) {
  * to the device notifications.
  */
 void init(Handle<Object> exports) {
-	exports->Set(String::NewSymbol("on"),          FunctionTemplate::New(on)->GetFunction());
-	exports->Set(String::NewSymbol("pumpRunLoop"), FunctionTemplate::New(pump_run_loop)->GetFunction());
-	exports->Set(String::NewSymbol("devices"),     FunctionTemplate::New(devices)->GetFunction());
-	exports->Set(String::NewSymbol("installApp"),  FunctionTemplate::New(installApp)->GetFunction());
-	exports->Set(String::NewSymbol("log"),         FunctionTemplate::New(log)->GetFunction());
+	exports->Set(NanNew("on"),          NanNew<FunctionTemplate>(on)->GetFunction());
+	exports->Set(NanNew("pumpRunLoop"), NanNew<FunctionTemplate>(pump_run_loop)->GetFunction());
+	exports->Set(NanNew("devices"),     NanNew<FunctionTemplate>(devices)->GetFunction());
+	exports->Set(NanNew("installApp"),  NanNew<FunctionTemplate>(installApp)->GetFunction());
+	exports->Set(NanNew("log"),         NanNew<FunctionTemplate>(log)->GetFunction());
+	exports->Set(NanNew("shutdown"),    NanNew<FunctionTemplate>(shutdown)->GetFunction());
 
 	listeners = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
 	connected_devices = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
@@ -667,13 +696,12 @@ void init(Handle<Object> exports) {
 }
 
 #if NODE_MODULE_VERSION > 0x000D
+  // 0.11.11 - 0.11.13
   NODE_MODULE(node_ios_device_v14, init)
-#elif NODE_MODULE_VERSION > 0x000C
-  NODE_MODULE(node_ios_device_v13, init)
-#elif NODE_MODULE_VERSION > 0x000B
-  NODE_MODULE(node_ios_device_v12, init)
 #elif NODE_MODULE_VERSION > 0x000A
+  // 0.10.x
   NODE_MODULE(node_ios_device_v11, init)
 #else
+  // 0.8.x
   NODE_MODULE(node_ios_device_v1, init)
 #endif

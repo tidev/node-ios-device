@@ -10,6 +10,9 @@
 		],
 		'mac_framework_dirs': [
 			'/System/Library/PrivateFrameworks'
+		],
+		'include_dirs': [
+			'<!(node -e "require(\'nan\')")'
 		]
 	},
 	'conditions': [
