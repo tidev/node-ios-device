@@ -176,5 +176,5 @@ exports.log = function log(udid, callback) {
 };
 
 process.on('exit', function () {
-	iosDeviceModule.shutdown();
+	iosDeviceModule && iosDeviceModule.shutdown();
 });

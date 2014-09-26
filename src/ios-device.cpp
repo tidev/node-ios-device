@@ -626,11 +626,7 @@ NAN_METHOD(log) {
 	NanReturnUndefined();
 }
 
-/*
- * shutdown()
- * Cleans up any allocated memory.
- */
-NAN_METHOD(shutdown) {
+static void cleanup(void *arg) {
 	// free up connected devices
 	CFIndex size = CFDictionaryGetCount(connected_devices);
 	CFStringRef* keys = (CFStringRef*)malloc(size * sizeof(CFStringRef));
@@ -672,8 +668,6 @@ NAN_METHOD(shutdown) {
 	}
 
 	free(keys);
-
-	NanReturnUndefined();
 }
 
 /*
@@ -686,17 +680,18 @@ void init(Handle<Object> exports) {
 	exports->Set(NanNew("devices"),     NanNew<FunctionTemplate>(devices)->GetFunction());
 	exports->Set(NanNew("installApp"),  NanNew<FunctionTemplate>(installApp)->GetFunction());
 	exports->Set(NanNew("log"),         NanNew<FunctionTemplate>(log)->GetFunction());
-	exports->Set(NanNew("shutdown"),    NanNew<FunctionTemplate>(shutdown)->GetFunction());
 
 	listeners = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
 	connected_devices = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
 
 	am_device_notification notification;
 	AMDeviceNotificationSubscribe(&on_device_notification, 0, 0, NULL, &notification);
+
+	node::AtExit(cleanup);
 }
 
 #if NODE_MODULE_VERSION > 0x000D
-  // 0.11.11 - 0.11.13
+  // 0.11.11 - 0.11.14
   NODE_MODULE(node_ios_device_v14, init)
 #elif NODE_MODULE_VERSION > 0x000A
   // 0.10.x
