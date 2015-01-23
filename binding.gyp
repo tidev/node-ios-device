@@ -33,6 +33,9 @@
 					},
 					{
 						'target_name': 'node_ios_device_v14'
+					},
+					{
+						'target_name': 'node_ios_device_v42'
 					}
 				]
 			}
