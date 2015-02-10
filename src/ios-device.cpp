@@ -691,7 +691,7 @@ void init(Handle<Object> exports) {
 }
 
 #if NODE_MODULE_VERSION > 0x000D
-  // 0.11.11 - 0.11.14
+  // 0.12.x
   NODE_MODULE(node_ios_device_v14, init)
 #elif NODE_MODULE_VERSION > 0x000A
   // 0.10.x
