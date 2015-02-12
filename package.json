@@ -1,7 +1,7 @@
 {
 	"name": "node-ios-device",
 	"description": "iOS device library",
-	"version": "0.3.1",
+	"version": "0.3.2",
 	"author": {
 		"name": "Appcelerator, Inc.",
 		"email": "info@appcelerator.com"
@@ -29,6 +29,6 @@
 	"gypfile": true,
 	"main": "./ios-device",
 	"engines": {
-		"node": ">=0.8"
+		"node": ">=0.10"
 	}
 }
