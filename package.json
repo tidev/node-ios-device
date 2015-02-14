@@ -23,7 +23,7 @@
 		"mobile"
 	],
 	"dependencies": {
-		"nan": "~1.3.0"
+		"nan": "~1.5.1"
 	},
 	"license": "Apache Public License v2",
 	"gypfile": true,
