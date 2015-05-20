@@ -45,7 +45,7 @@ iojs_v44:
 	$(call build,iojs,iojs.org,2.0.2,iojs_ios_device_v44.node)
 
 clean:
-	node-gyp clean
+	$(NODE_GYP) clean
 	rm -rf out
 
 .PHONY: clean node_v1 node_v11 node_v14 iojs_v42 iojs_v43 iojs_v44
