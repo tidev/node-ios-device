@@ -42,16 +42,7 @@ function lockAndLoad(fn) {
 		}
 
 		// if we've already loaded the module
-		if (initialized) {
-			return fn.apply(null, args);
-		}
-
-		// determine if we're running node or iojs
-		exec(process.execPath + ' -h', function (err, help) {
-			if (err) {
-				return callback(err);
-			}
-
+		if (!initialized) {
 			var modulesVer = parseInt(process.versions.modules) || (function (m) {
 					return !m || m[1] === '0.8' ? 1 : m[1] === '0.10' ? 11 : m[1] === '0.11' && m[2] < 8 ? 12 : 13;
 				}(process.version.match(/^v(\d+\.\d+)\.(\d+)$/)));
@@ -61,29 +52,17 @@ function lockAndLoad(fn) {
 				return callback(new Error('Node.js v' + process.version + ' is not supported'));
 			}
 
-			// above we run the help so we could check the docs URL, however the correct URL for io.js
-			// wasn't fixed until v1.0.2. so if version is 1.0.0 or 1.0.1, then we cannot trust this URL
-			// and as a last attempt we'll check if the execPath contains "iojs"
-			var type = 'node';
-			if (/iojs\.org/.test(help) || (/^v1\.0\.[01]$/.test(process.version) && /iojs/.test(path.basename(process.execPath)))) {
-				type = 'iojs';
-			}
-
 			// check that the compiled module exists before trying to load it
-			var file = path.resolve(__dirname + '/out/' + type + '_ios_device_v' + modulesVer + '.node');
-			if (!fs.existsSync(file)) {
-				// maybe the module is sitting in the build directory?
-				file = path.resolve(__dirname + '/build/Release/node_ios_device.node');
-			}
+			var file = path.resolve(__dirname + '/out/node_ios_device_v' + modulesVer + '.node');
 			if (!fs.existsSync(file)) {
 				return callback(new Error('Missing compatible node-ios-device library'));
 			}
 
 			iosDeviceModule = require(file);
 			initialized = true;
+		}
 
-			fn.apply(null, args);
-		});
+		fn.apply(null, args);
 	};
 }
 
