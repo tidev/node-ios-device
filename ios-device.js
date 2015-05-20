@@ -4,12 +4,14 @@
  * @module ios-device
  *
  * @copyright
- * Copyright (c) 2013-2014 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2013-2015 by Appcelerator, Inc. All Rights Reserved.
  *
  * @license
  * Licensed under the terms of the Apache Public License
  * Please see the LICENSE included with this distribution for details.
  */
+
+'use strict';
 
 var exec = require('child_process').exec,
 	fs = require('fs'),
@@ -30,27 +32,59 @@ var exec = require('child_process').exec,
 /**
  * Detects which version of node-ios-device should be require()'d.
  */
-function loadIosDeviceModule() {
-	if (initialized) return;
+function lockAndLoad(fn) {
+	return function () {
+		var args = arguments,
+			callback = args.length ? args[args.length-1] : function () {};
 
-	var modulesVer = parseInt(process.versions.modules) || (function (m) {
-		return !m || m[1] === '0.8' ? 1 : m[1] === '0.10' ? 11 : m[1] === '0.11' && m[2] < 8 ? 12 : 13;
-	}(process.version.match(/^v(\d+\.\d+)\.(\d+)$/)));
+		if (process.platform !== 'darwin') {
+			return callback(new Error('OS "' + process.platform + '" not supported'));
+		}
 
-	// we don't support Node.js 0.11.0 - 0.11.10
-	if (modulesVer === 12 || modulesVer === 13) {
-		throw new Error('Node.js ' + process.version + ' is not supported');
-	}
+		// if we've already loaded the module
+		if (initialized) {
+			return fn.apply(null, args);
+		}
 
-	var lib = __dirname + '/out/node_ios_device_v' + modulesVer;
+		// determine if we're running node or iojs
+		exec(process.execPath + ' -h', function (err, help) {
+			if (err) {
+				return callback(err);
+			}
 
-	var file = path.resolve(lib + '.node');
-	if (!fs.existsSync(file)) {
-		throw new Error('Missing compatible node-ios-device library');
-	}
+			var modulesVer = parseInt(process.versions.modules) || (function (m) {
+					return !m || m[1] === '0.8' ? 1 : m[1] === '0.10' ? 11 : m[1] === '0.11' && m[2] < 8 ? 12 : 13;
+				}(process.version.match(/^v(\d+\.\d+)\.(\d+)$/)));
 
-	iosDeviceModule = require(lib);
-	initialized = true;
+			// we don't support Node.js 0.11.0 - 0.11.10
+			if (modulesVer === 12 || modulesVer === 13) {
+				return callback(new Error('Node.js v' + process.version + ' is not supported'));
+			}
+
+			// above we run the help so we could check the docs URL, however the correct URL for io.js
+			// wasn't fixed until v1.0.2. so if version is 1.0.0 or 1.0.1, then we cannot trust this URL
+			// and as a last attempt we'll check if the execPath contains "iojs"
+			var type = 'node';
+			if (/iojs\.org/.test(help) || (/^v1\.0\.[01]$/.test(process.version) && /iojs/.test(path.basename(process.execPath)))) {
+				type = 'iojs';
+			}
+
+			// check that the compiled module exists before trying to load it
+			var file = path.resolve(__dirname + '/out/' + type + '_ios_device_v' + modulesVer + '.node');
+			if (!fs.existsSync(file)) {
+				// maybe the module is sitting in the build directory?
+				file = path.resolve(__dirname + '/build/Release/node_ios_device.node');
+			}
+			if (!fs.existsSync(file)) {
+				return callback(new Error('Missing compatible node-ios-device library'));
+			}
+
+			iosDeviceModule = require(file);
+			initialized = true;
+
+			fn.apply(null, args);
+		});
+	};
 }
 
 /**
@@ -58,16 +92,10 @@ function loadIosDeviceModule() {
  *
  * @param {Function} callback(err, devices) - A function to call with the connected devices.
  */
-exports.devices = function devices(callback) {
-	if (process.platform !== 'darwin') {
-		return callback(new Error('OS "' + process.platform + '" not supported'));
-	}
-
-	loadIosDeviceModule();
+exports.devices = lockAndLoad(function (callback) {
 	iosDeviceModule.pumpRunLoop();
-
 	callback(null, iosDeviceModule.devices());
-};
+});
 
 /**
  * Continuously retrieves an array of all connected iOS devices. Whenever a
@@ -76,13 +104,7 @@ exports.devices = function devices(callback) {
  * @param {Function} callback(err, devices) - A function to call with the connected devices.
  * @returns {Function} off() - A function that discontinues tracking.
  */
-exports.trackDevices = function trackDevices(callback) {
-	if (process.platform !== 'darwin') {
-		return callback(new Error('OS "' + process.platform + '" not supported'));
-	}
-
-	loadIosDeviceModule();
-
+exports.trackDevices = lockAndLoad(function (callback) {
 	// if we're not already pumping, start up the pumper
 	if (!pumping) {
 		interval = setInterval(iosDeviceModule.pumpRunLoop, exports.pumpInterval);
@@ -107,7 +129,7 @@ exports.trackDevices = function trackDevices(callback) {
 			pumping || clearInterval(interval);
 		}
 	};
-};
+});
 
 /**
  * Installs an iOS app on the specified device.
@@ -116,11 +138,7 @@ exports.trackDevices = function trackDevices(callback) {
  * @param {String} appPath - The path to iOS .app directory to install.
  * @param {Function} callback(err) - A function to call when the install finishes.
  */
-exports.installApp = function installApp(udid, appPath, callback) {
-	if (process.platform !== 'darwin') {
-		return callback(new Error('OS "' + process.platform + '" not supported'));
-	}
-
+exports.installApp = lockAndLoad(function (udid, appPath, callback) {
 	appPath = path.resolve(appPath);
 	if (!fs.existsSync(appPath)) {
 		return callback(new Error('Specified .app path does not exist'));
@@ -129,7 +147,6 @@ exports.installApp = function installApp(udid, appPath, callback) {
 		return callback(new Error('Specified .app path is not a valid app'));
 	}
 
-	loadIosDeviceModule();
 	iosDeviceModule.pumpRunLoop();
 
 	try {
@@ -138,7 +155,7 @@ exports.installApp = function installApp(udid, appPath, callback) {
 	} catch (ex) {
 		callback(ex);
 	}
-};
+});
 
 /**
  * Forwards the specified iOS device's log messages.
@@ -146,13 +163,7 @@ exports.installApp = function installApp(udid, appPath, callback) {
  * @param {String} udid - The device udid to forward log messages.
  * @param {Function} callback(err) - A function to call with each log message.
  */
-exports.log = function log(udid, callback) {
-	if (process.platform !== 'darwin') {
-		return callback(new Error('OS "' + process.platform + '" not supported'));
-	}
-
-	loadIosDeviceModule();
-
+exports.log = lockAndLoad(function (udid, callback) {
 	// if we're not already pumping, start up the pumper
 	if (!pumping) {
 		interval = setInterval(iosDeviceModule.pumpRunLoop, exports.pumpInterval);
@@ -173,4 +184,4 @@ exports.log = function log(udid, callback) {
 			pumping || clearInterval(interval);
 		}
 	};
-};
+});

@@ -1,6 +1,6 @@
 /**
  * node-ios-device
- * Copyright (c) 2013-2014 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2013-2015 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Apache Public License
  * Please see the LICENSE included with this distribution for details.
  */
@@ -690,13 +690,12 @@ void init(Handle<Object> exports) {
 	node::AtExit(cleanup);
 }
 
-#if NODE_MODULE_VERSION > 0x000D
-  // 0.12.x
-  NODE_MODULE(node_ios_device_v14, init)
-#elif NODE_MODULE_VERSION > 0x000A
-  // 0.10.x
-  NODE_MODULE(node_ios_device_v11, init)
+#define ADDON_MODULE2(ver, fn) NODE_MODULE(node_ios_device_v ## ver, fn)
+#define ADDON_MODULE(ver, fn) ADDON_MODULE2(ver, fn)
+
+// in Node.js 0.8, NODE_MODULE_VERSION is (1) and the parenthesis mess things up
+#if NODE_MODULE_VERSION > 1
+	ADDON_MODULE(NODE_MODULE_VERSION, init)
 #else
-  // 0.8.x
-  NODE_MODULE(node_ios_device_v1, init)
+	ADDON_MODULE(1, init)
 #endif
