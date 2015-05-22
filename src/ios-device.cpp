@@ -33,7 +33,8 @@ static bool devices_changed;
  */
 char* cfstring_to_cstr(CFStringRef str) {
 	if (str != NULL) {
-		CFIndex length = CFStringGetLength(str);
+		// add 1 to make sure there's enough buffer for the utf-8 string and the null character
+		CFIndex length = CFStringGetLength(str) + 1;
 		CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
 		char* buffer = (char*)malloc(maxSize);
 		if (CFStringGetCString(str, buffer, maxSize, kCFStringEncodingUTF8)) {
