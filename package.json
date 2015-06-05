@@ -1,34 +1,38 @@
 {
-	"name": "node-ios-device",
-	"description": "iOS device library",
-	"version": "0.3.2",
-	"author": {
-		"name": "Appcelerator, Inc.",
-		"email": "info@appcelerator.com"
-	},
-	"maintainers": [
-		{"name": "Chris Barber", "email": "cbarber@appcelerator.com"}
-	],
-	"repository": {
-		"type": "git",
-		"url": "git://github.com/appcelerator/node-ios-device.git"
-	},
-	"keywords": [
-		"appcelerator",
-		"ios",
-		"iphone",
-		"ipad",
-		"install",
-		"mobiledevice",
-		"mobile"
-	],
-	"dependencies": {
-		"nan": "~1.3.0"
-	},
-	"license": "Apache Public License v2",
-	"gypfile": true,
-	"main": "./ios-device",
-	"engines": {
-		"node": ">=0.10"
-	}
+  "name": "node-ios-device",
+  "description": "iOS device library",
+  "version": "0.4.1",
+  "author": {
+    "name": "Appcelerator, Inc.",
+    "email": "info@appcelerator.com"
+  },
+  "maintainers": [
+    {
+      "name": "Chris Barber",
+      "email": "cbarber@appcelerator.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/appcelerator/node-ios-device.git"
+  },
+  "keywords": [
+    "appcelerator",
+    "ios",
+    "iphone",
+    "ipad",
+    "install",
+    "mobiledevice",
+    "mobile"
+  ],
+  "dependencies": {
+    "nan": "~1.8.4",
+    "node-gyp": "^2.0.1"
+  },
+  "license": "Apache Public License v2",
+  "gypfile": true,
+  "main": "./ios-device",
+  "engines": {
+    "node": ">=0.10"
+  }
 }
