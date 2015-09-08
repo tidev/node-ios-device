@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "iOS device library",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
@@ -26,8 +26,8 @@
     "mobile"
   ],
   "dependencies": {
-    "nan": "~2.0.4",
-    "node-gyp": "^2.0.2"
+    "nan": "~2.0.8",
+    "node-gyp": "^3.0.1"
   },
   "license": "Apache-2.0",
   "gypfile": true,
