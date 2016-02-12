@@ -16,14 +16,25 @@
 			],
 			'libraries': [
 				'/System/Library/Frameworks/CoreFoundation.framework',
-				'/System/Library/PrivateFrameworks/MobileDevice.framework'
+				'/System/Library/PrivateFrameworks/MobileDevice.framework',
+				'/usr/local/lib/libboost_system-mt.a',
+				'/usr/local/lib/libboost_thread-mt.a'
 			],
 			'mac_framework_dirs': [
 				'/System/Library/PrivateFrameworks'
 			],
 			'include_dirs': [
-				'<!(node -e "require(\'nan\')")'
+				'<!(node -e "require(\'nan\')")',
+				'/usr/local/include'
 			],
+			'cflags': [
+				'-Wl,-whole-archive -lboost_system -Wl,--no-whole-archive'
+			],
+			'xcode_settings': {
+				'OTHER_CPLUSPLUSFLAGS' : [ '-std=c++11', '-stdlib=libc++' ],
+				'OTHER_LDFLAGS': [ '-stdlib=libc++' ],
+				'MACOSX_DEPLOYMENT_TARGET': '10.7'
+			},
 			'postbuilds': [
 				{
 					'postbuild_name': 'Copy release to output directory',

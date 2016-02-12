@@ -30,14 +30,6 @@ node_v11:
 node_v14:
 	$(call build,node,nodejs.org,0.12.7)
 
-# Node.js 4.x
-node_v46:
-	$(call build,node,nodejs.org,4.2.1)
-
-# Node.js 5.0
-node_v47:
-	$(call build,node,nodejs.org,5.0.0)
-
 # io.js 1.0.x
 iojs_v42:
 	$(call build,iojs,iojs.org,1.0.4)
@@ -53,6 +45,14 @@ iojs_v44:
 # io.js 3.x
 iojs_v45:
 	$(call build,iojs,iojs.org,3.3.0)
+
+# Node.js 4.x
+node_v46:
+	$(call build,node,nodejs.org,4.2.1)
+
+# Node.js 5.x
+node_v47:
+	$(call build,node,nodejs.org,5.5.0)
 
 clean:
 	$(NODE_GYP) clean
