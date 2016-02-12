@@ -34,8 +34,6 @@ From GitHub:
 
 From Source:
 
-> Note: you need to install Boost. It will expect the headers in `/usr/local/include/boost`. You can install it by running `brew install boost`.
-
 	git clone https://github.com/appcelerator/node-ios-device.git
 	cd node-ios-device
 	npm install

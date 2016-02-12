@@ -17,15 +17,15 @@
 			'libraries': [
 				'/System/Library/Frameworks/CoreFoundation.framework',
 				'/System/Library/PrivateFrameworks/MobileDevice.framework',
-				'/usr/local/lib/libboost_system-mt.a',
-				'/usr/local/lib/libboost_thread-mt.a'
+				'../deps/boost/lib/libboost_system-mt.a',
+				'../deps/boost/lib/libboost_thread-mt.a'
 			],
 			'mac_framework_dirs': [
 				'/System/Library/PrivateFrameworks'
 			],
 			'include_dirs': [
 				'<!(node -e "require(\'nan\')")',
-				'/usr/local/include'
+				'deps/boost/include'
 			],
 			'cflags': [
 				'-Wl,-whole-archive -lboost_system -Wl,--no-whole-archive'

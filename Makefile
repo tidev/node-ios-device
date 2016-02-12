@@ -24,11 +24,11 @@ node_v1:
 
 # Node.js 0.10.x
 node_v11:
-	$(call build,node,nodejs.org,0.10.40)
+	$(call build,node,nodejs.org,0.10.42)
 
 # Node.js 0.12.x
 node_v14:
-	$(call build,node,nodejs.org,0.12.7)
+	$(call build,node,nodejs.org,0.12.10)
 
 # io.js 1.0.x
 iojs_v42:
@@ -48,11 +48,11 @@ iojs_v45:
 
 # Node.js 4.x
 node_v46:
-	$(call build,node,nodejs.org,4.2.1)
+	$(call build,node,nodejs.org,4.3.0)
 
 # Node.js 5.x
 node_v47:
-	$(call build,node,nodejs.org,5.5.0)
+	$(call build,node,nodejs.org,5.6.0)
 
 clean:
 	$(NODE_GYP) clean
