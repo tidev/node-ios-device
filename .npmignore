@@ -3,8 +3,9 @@
 .git
 .gitignore
 .travis.yml
+binding
 build
 node_modules
 out
-npm-debug.log
+npm-debug.log*
 env.properties
