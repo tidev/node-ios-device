@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "iOS device library",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
@@ -26,14 +26,32 @@
     "mobile"
   ],
   "dependencies": {
-    "nan": "~2.2.0",
-    "node-gyp": "^3.0.3"
+    "nan": "~2.3.2",
+    "node-pre-gyp": "^0.6.27"
+  },
+  "bundledDependencies": [
+    "node-pre-gyp"
+  ],
+  "scripts": {
+    "install": "node-pre-gyp install --fallback-to-build",
+    "packpub": "node-pre-gyp rebuild package publish"
+  },
+  "binary": {
+    "module_name": "node_ios_device",
+    "module_path": "./binding/{node_abi}-{platform}-{arch}/",
+    "remote_path": "./{name}/v{version}",
+    "host": "https://appc-node-binaries.s3.amazonaws.com"
   },
   "license": "Apache-2.0",
   "gypfile": true,
-  "os": [ "darwin" ],
+  "os": [
+    "darwin"
+  ],
   "main": "./ios-device",
   "engines": {
     "node": ">=0.10"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.3.7"
   }
 }
