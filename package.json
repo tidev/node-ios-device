@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "iOS device library",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
@@ -37,7 +37,8 @@
   },
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
-    "packpub": "node-pre-gyp rebuild package publish"
+    "build-n-publish-binding": "node-pre-gyp rebuild package publish",
+    "prepublish": "./bin/build-all.sh"
   },
   "binary": {
     "module_name": "node_ios_device",
