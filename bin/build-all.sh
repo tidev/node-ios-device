@@ -2,7 +2,7 @@
 
 targets=(
 	0.10.44 # 11
-	0.12.14 # 14
+	0.12.13 # 14
 	1.8.4   # 42
 	2.5.0   # 44
 	3.3.1   # 45
@@ -32,5 +32,3 @@ for target in ${targets[@]}; do
 	echo "\nEXECUTING $cmd\n"
 	$cmd
 done
-
-exit 1
