@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "iOS device library",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
@@ -27,13 +27,14 @@
   ],
   "dependencies": {
     "nan": "~2.3.3",
-    "node-pre-gyp": "^0.6.27"
+    "node-pre-gyp": "^0.6.28",
+    "node-pre-gyp-init": "^0.1.2"
   },
   "bundledDependencies": [
     "node-pre-gyp"
   ],
   "devDependencies": {
-    "aws-sdk": "^2.3.8"
+    "aws-sdk": "^2.3.9"
   },
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
