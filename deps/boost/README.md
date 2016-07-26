@@ -2,8 +2,8 @@
 
 This folder contains the bare essentials of the Boost library needed to build
 node-ios-device. It contains pre-compiled static libraries for Boost's "system"
-and "thread" libraries for OS X. It's based on Boost 1.59.0 which was installed
-via MacPorts.
+and "thread" libraries for OS X. It's based on Boost 1.61.0 and compiled using
+Xcode 7.3.1.
 
 Boost is licensed under the Boost Software License version 1.0.
 

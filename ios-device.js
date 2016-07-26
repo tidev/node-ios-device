@@ -13,7 +13,9 @@
 
 'use strict';
 
+var debug = require('debug')('node-ios-device');
 var fs = require('fs');
+var EventEmitter = require('events').EventEmitter;
 var init = require('node-pre-gyp-init');
 var path = require('path');
 
@@ -21,6 +23,9 @@ var path = require('path');
 var pumping = 0;
 var timer;
 var binding;
+var emitter = new EventEmitter;
+
+emitter.on('debug', debug);
 
 module.exports.pumpInterval = 10;
 module.exports.devices = devices;
@@ -39,11 +44,21 @@ function initBinding(callback) {
 		return setImmediate(callback);
 	}
 
+	debug('Initializing binding');
+
 	init(path.resolve(__dirname, './package.json'), function (err, bindingPath) {
-		if (!err) {
-			binding = require(bindingPath);
+		if (err) {
+			return callback(err);
 		}
-		callback(err);
+
+		debug('Loading binding: ' + bindingPath);
+		binding = require(bindingPath);
+
+		debug('Setting emitter');
+		binding.setEmitter(emitter);
+		debug('Emitter set');
+
+		callback();
 	});
 }
 
@@ -58,7 +73,10 @@ function devices(callback) {
 			return callback(err);
 		}
 
+		debug('Pumping run loop');
 		binding.pumpRunLoop();
+
+		debug('Calling binding.devices()');
 		callback(null, binding.devices());
 	});
 }
@@ -72,17 +90,16 @@ function devices(callback) {
  */
 function trackDevices(callback) {
 	var stopped = true;
+	var handler = function (devices) {
+		stopped || callback(null, binding.devices());
+	};
 
 	initBinding(function (err) {
 		if (err) {
 			return callback(err);
 		}
 
-		// if we're not already pumping, start up the pumper
-		if (!pumping) {
-			pump(binding);
-		}
-		pumping++;
+		startPumping();
 
 		// immediately return the array of devices
 		callback(null, binding.devices());
@@ -90,9 +107,7 @@ function trackDevices(callback) {
 		stopped = false;
 
 		// listen for any device connects or disconnects
-		binding.on('devicesChanged', function (devices) {
-			stopped || callback(null, binding.devices());
-		});
+		emitter.on('devicesChanged', handler);
 	});
 
 	// return the stop() function
@@ -100,8 +115,12 @@ function trackDevices(callback) {
 		if (!stopped) {
 			stopped = true;
 			pumping = Math.max(pumping - 1, 0);
-			pumping || clearTimeout(timer);
+			if (!pumping) {
+				debug('Stopping run loop pump');
+				clearTimeout(timer);
+			}
 		}
+		emitter.removeListener('devicesChanged', handler);
 	};
 }
 
@@ -127,6 +146,7 @@ function installApp(udid, appPath, callback) {
 			return callback(new Error('Specified .app path is not a valid app'));
 		}
 
+		debug('Pumping run loop');
 		binding.pumpRunLoop();
 
 		try {
@@ -153,10 +173,7 @@ function log(udid, callback) {
 		}
 
 		// if we're not already pumping, start up the pumper
-		if (!pumping) {
-			pump();
-		}
-		pumping++;
+		startPumping();
 
 		stopped = false;
 
@@ -170,7 +187,10 @@ function log(udid, callback) {
 		if (!stopped) {
 			stopped = true;
 			pumping = Math.max(pumping - 1, 0);
-			pumping || clearTimeout(timer);
+			if (!pumping) {
+				debug('Stopping run loop pump');
+				clearTimeout(timer);
+			}
 		}
 	};
 }
@@ -180,7 +200,13 @@ function log(udid, callback) {
  *
  * @param {Object} binding - The native module binding.
  */
-function pump() {
-	binding.pumpRunLoop();
-	timer = setTimeout(pump, exports.pumpInterval);
+function startPumping() {
+	if (!pumping) {
+		debug('Starting run loop pump');
+		(function pump() {
+			binding.pumpRunLoop();
+			timer = setTimeout(pump, exports.pumpInterval);
+		}());
+	}
+	pumping++;
 }
