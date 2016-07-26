@@ -9,8 +9,8 @@
 			'libraries': [
 				'/System/Library/Frameworks/CoreFoundation.framework',
 				'/System/Library/PrivateFrameworks/MobileDevice.framework',
-				'../deps/boost/lib/libboost_system-mt.a',
-				'../deps/boost/lib/libboost_thread-mt.a'
+				'../deps/boost/lib/libboost_system.a',
+				'../deps/boost/lib/libboost_thread.a'
 			],
 			'mac_framework_dirs': [
 				'/System/Library/PrivateFrameworks'

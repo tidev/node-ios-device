@@ -29,10 +29,49 @@ typedef struct Listener {
 /**
  * Globals
  */
-static CFMutableDictionaryRef listeners;
 static CFMutableDictionaryRef connectedDevices;
 static bool devicesChanged;
-static boost::shared_mutex deviceInfoMutex;
+static boost::shared_mutex deviceMutex;
+static Nan::Persistent<Object> emitter;
+
+/**
+ * Emits a debug message.
+ */
+static void debug(const std::string& output) {
+	Local<Object> ee = Nan::New(emitter);
+	if (!ee.IsEmpty()) {
+		Local<Function> emit = Local<Function>::Cast(ee->Get(Nan::New("emit").ToLocalChecked()));
+		Local<Value> args[2] = {
+			Nan::New("debug").ToLocalChecked(),
+			Nan::New(output.c_str()).ToLocalChecked()
+		};
+		emit->Call(ee, 2, args);
+	}
+}
+
+/**
+ * Formats and emits a debug message.
+ */
+static void debug(const char* format, ...) {
+	int final_n;
+	int n = strlen(format) * 2;
+	std::string str;
+	std::unique_ptr<char[]> formatted;
+	va_list ap;
+	while(1) {
+		formatted.reset(new char[n]);
+		strcpy(&formatted[0], format);
+		va_start(ap, format);
+		final_n = vsnprintf(&formatted[0], n, format, ap);
+		va_end(ap);
+		if (final_n < 0 || final_n >= n) {
+			n += abs(final_n - n + 1);
+		} else {
+			break;
+		}
+	}
+	debug(std::string(formatted.get()));
+}
 
 /**
  * Converts CFStringRef strings to C strings.
@@ -174,29 +213,30 @@ public:
 			throw std::runtime_error((boost::format("Failed to start \"%s\" service (0x%x)") % serviceName % rval).str());
 		}
 	}
-};
 
-/**
- * Helper function that stores a property in the device's props dictionary.
- */
-static void setDevicePropertyString(Device* device, const char* key, CFStringRef id) {
-	CFStringRef valueStr = (CFStringRef)AMDeviceCopyValue(device->handle, 0, id);
-	if (valueStr != NULL) {
-		char* value = cfstring_to_cstr(valueStr);
-		CFRelease(valueStr);
-		if (value != NULL) {
-			device->props[key] = std::string(value);
-			free(value);
+	/**
+	 * Sets a property.
+	 */
+	void set(const char* key, CFStringRef id) {
+		CFStringRef valueStr = (CFStringRef)AMDeviceCopyValue(this->handle, 0, id);
+		if (valueStr != NULL) {
+			char* value = cfstring_to_cstr(valueStr);
+			CFRelease(valueStr);
+			if (value != NULL) {
+				this->props[key] = std::string(value);
+				free(value);
+			}
 		}
 	}
-}
+};
 
 /**
  * Fetches additional info about a device for the given udid. Note that this
  * function runs in a thread so that the main thread's event loop isn't blocked.
  */
 static void getDeviceInfo(Device* device) {
-	boost::shared_lock<boost::shared_mutex> lock(deviceInfoMutex);
+	boost::upgrade_lock<boost::shared_mutex> lock(deviceMutex);
+	boost::upgrade_to_unique_lock<boost::shared_mutex> unique_lock(lock);
 
 	// we must always set this flag
 	devicesChanged = true;
@@ -208,17 +248,18 @@ static void getDeviceInfo(Device* device) {
 
 	try {
 		// connect to the device and get its information
+		//printf("Connecting to device %s\n", device->props["udid"].c_str());
 		device->connect();
-		setDevicePropertyString(device, "name",            CFSTR("DeviceName"));
-		setDevicePropertyString(device, "buildVersion",    CFSTR("BuildVersion"));
-		setDevicePropertyString(device, "cpuArchitecture", CFSTR("CPUArchitecture"));
-		setDevicePropertyString(device, "deviceClass",     CFSTR("DeviceClass"));
-		setDevicePropertyString(device, "deviceColor",     CFSTR("DeviceColor"));
-		setDevicePropertyString(device, "hardwareModel",   CFSTR("HardwareModel"));
-		setDevicePropertyString(device, "modelNumber",     CFSTR("ModelNumber"));
-		setDevicePropertyString(device, "productType",     CFSTR("ProductType"));
-		setDevicePropertyString(device, "productVersion",  CFSTR("ProductVersion"));
-		setDevicePropertyString(device, "serialNumber",    CFSTR("SerialNumber"));
+		device->set("name",            CFSTR("DeviceName"));
+		device->set("buildVersion",    CFSTR("BuildVersion"));
+		device->set("cpuArchitecture", CFSTR("CPUArchitecture"));
+		device->set("deviceClass",     CFSTR("DeviceClass"));
+		device->set("deviceColor",     CFSTR("DeviceColor"));
+		device->set("hardwareModel",   CFSTR("HardwareModel"));
+		device->set("modelNumber",     CFSTR("ModelNumber"));
+		device->set("productType",     CFSTR("ProductType"));
+		device->set("productVersion",  CFSTR("ProductVersion"));
+		device->set("serialNumber",    CFSTR("SerialNumber"));
 
 		CFNumberRef valueNum = (CFNumberRef)AMDeviceCopyValue(device->handle, 0, CFSTR("HostAttached"));
 		int64_t value = 0;
@@ -226,59 +267,29 @@ static void getDeviceInfo(Device* device) {
 		CFRelease(valueNum);
 		device->hostConnected = value == 1;
 	} catch (...) {
-		// oh well
+		//printf("Error!\n");
 	}
 
+	//printf("Disconnecting from device %s\n", device->props["udid"].c_str());
 	device->disconnect();
 }
 
 /**
- * on()
- * Defines a JavaScript function that adds an event listener.
+ * initEmitter()
+ * Initializes the event emitter.
  */
-NAN_METHOD(on) {
-	if (info.Length() >= 2) {
-		if (!info[0]->IsString()) {
-			return Nan::ThrowError(Exception::Error(Nan::New("Argument \'event\' must be a string").ToLocalChecked()));
-		}
-
-		if (!info[1]->IsFunction()) {
-			return Nan::ThrowError(Exception::Error(Nan::New("Argument \'callback\' must be a function").ToLocalChecked()));
-		}
-
-		Handle<String> event = Handle<String>::Cast(info[0]);
-		String::Utf8Value str(event->ToString());
-		CFStringRef eventName = CFStringCreateWithCString(NULL, (char*)*str, kCFStringEncodingUTF8);
-
-		Listener* listener = new Listener;
-		listener->callback.Reset(Local<Function>::Cast(info[1]));
-		CFDictionarySetValue(listeners, eventName, listener);
+NAN_METHOD(setEmitter) {
+	if (info.Length() != 1) {
+		return Nan::ThrowError(Exception::Error(Nan::New("Expected 1 argument").ToLocalChecked()));
 	}
+
+	if (!info[0]->IsObject()) {
+		return Nan::ThrowError(Exception::Error(Nan::New("Argument \'emitter\' must be an object").ToLocalChecked()));
+	}
+
+	emitter.Reset(Local<Object>::Cast(info[0]));
 
 	info.GetReturnValue().SetUndefined();
-}
-
-/**
- * Notifies all listeners of an event.
- */
-void emit(const char* event) {
-	CFStringRef eventStr = CFStringCreateWithCStringNoCopy(NULL, event, kCFStringEncodingUTF8, NULL);
-	CFIndex size = CFDictionaryGetCount(listeners);
-	CFStringRef* keys = (CFStringRef*)malloc(size * sizeof(CFStringRef));
-	CFDictionaryGetKeysAndValues(listeners, (const void **)keys, NULL);
-	CFIndex i = 0;
-
-	for (; i < size; i++) {
-		if (CFStringCompare(keys[i], eventStr, 0) == kCFCompareEqualTo) {
-			const Listener* listener = (const Listener*)CFDictionaryGetValue(listeners, keys[i]);
-			if (listener != NULL) {
-				Local<Function> callback = Nan::New<Function>(listener->callback);
-				callback->Call(Nan::GetCurrentContext()->Global(), 0, NULL);
-			}
-		}
-	}
-
-	free(keys);
 }
 
 /**
@@ -287,8 +298,7 @@ void emit(const char* event) {
  */
 NAN_METHOD(pump_run_loop) {
 	// Note that this value is somewhat arbitrary. There was a report once that
-	// this value was too low and the computer couldn't keep up. It should
-	// probably be configurable.
+	// this value was too low and the computer couldn't keep up.
 	CFTimeInterval interval = 0.25;
 
 	if (info.Length() > 0 && info[0]->IsNumber()) {
@@ -300,10 +310,18 @@ NAN_METHOD(pump_run_loop) {
 	CFRunLoopRunInMode(kCFRunLoopDefaultMode, interval, false);
 
 	if (devicesChanged) {
+		debug("Devices changed, emitting event");
+
 		// immediately reset just in case we have a getDeviceInfo() call running
 		// in the background
 		devicesChanged = false;
-		emit("devicesChanged");
+
+		Local<Object> ee = Nan::New(emitter);
+		if (!ee.IsEmpty()) {
+			Local<Function> emit = Local<Function>::Cast(ee->Get(Nan::New("emit").ToLocalChecked()));
+			Local<Value> args[1] = { Nan::New("devicesChanged").ToLocalChecked() };
+			emit->Call(ee, 1, args);
+		}
 	}
 
 	info.GetReturnValue().SetUndefined();
@@ -315,7 +333,7 @@ NAN_METHOD(pump_run_loop) {
  * This should be called after pumpRunLoop() has been called.
  */
 NAN_METHOD(devices) {
-	boost::lock_guard<boost::shared_mutex> lock(deviceInfoMutex);
+	boost::lock_guard<boost::shared_mutex> lock(deviceMutex);
 
 	Local<Array> result = Nan::New<Array>();
 
@@ -323,6 +341,7 @@ NAN_METHOD(devices) {
 	Device** values = (Device**)malloc(size * sizeof(Device*));
 	CFDictionaryGetKeysAndValues(connectedDevices, NULL, (const void **)values);
 
+	debug("Found %d device%s", size, size == 1 ? "" : "s");
 	for (CFIndex i = 0; i < size; i++) {
 		Local<Object> p = Nan::New<Object>();
 		for (std::map<std::string, std::string>::iterator it = values[i]->props.begin(); it != values[i]->props.end(); ++it) {
@@ -340,29 +359,36 @@ NAN_METHOD(devices) {
  * The callback when a device notification is received.
  */
 void on_device_notification(am_device_notification_callback_info* info, void* arg) {
-	if (info->msg == ADNCI_MSG_CONNECTED) {
+	CFStringRef udid = AMDeviceCopyDeviceIdentifier(info->dev);
+	bool exists = false;
+	{
+		boost::lock_guard<boost::shared_mutex> lock(deviceMutex);
+		exists = CFDictionaryContainsKey(connectedDevices, udid);
+	}
+
+	if (!exists && info->msg == ADNCI_MSG_CONNECTED) {
+		debug("Device connected, getting device info");
 		std::thread(getDeviceInfo, new Device(info->dev)).detach();
 
-	} else if (info->msg == ADNCI_MSG_DISCONNECTED) {
-		CFStringRef udid = AMDeviceCopyDeviceIdentifier(info->dev);
-		if (CFDictionaryContainsKey(connectedDevices, udid)) {
-			// remove the device from the dictionary and destroy it
-			Device* device = (Device*)CFDictionaryGetValue(connectedDevices, udid);
-			CFDictionaryRemoveValue(connectedDevices, udid);
+	} else if (exists && info->msg == ADNCI_MSG_DISCONNECTED) {
+		debug("Device disconnected, cleaning up");
 
-			if (device->logCallback) {
-				delete device->logCallback;
-			}
-			if (device->logSource) {
-				CFRelease(device->logSource);
-			}
-			if (device->logSocket) {
-				CFRelease(device->logSocket);
-			}
+		// remove the device from the dictionary and destroy it
+		Device* device = (Device*)CFDictionaryGetValue(connectedDevices, udid);
+		CFDictionaryRemoveValue(connectedDevices, udid);
 
-			delete device;
-			devicesChanged = true;
+		if (device->logCallback) {
+			delete device->logCallback;
 		}
+		if (device->logSource) {
+			CFRelease(device->logSource);
+		}
+		if (device->logSocket) {
+			CFRelease(device->logSocket);
+		}
+
+		delete device;
+		devicesChanged = true;
 	}
 }
 
@@ -634,18 +660,6 @@ static void cleanup(void *arg) {
 	}
 
 	free(keys);
-
-	// free up listeners
-	size = CFDictionaryGetCount(listeners);
-	keys = (CFStringRef*)malloc(size * sizeof(CFStringRef));
-	CFDictionaryGetKeysAndValues(listeners, (const void **)keys, NULL);
-	i = 0;
-
-	for (; i < size; i++) {
-		CFDictionaryRemoveValue(listeners, keys[i]);
-	}
-
-	free(keys);
 }
 
 /**
@@ -653,13 +667,12 @@ static void cleanup(void *arg) {
  * to the device notifications.
  */
 static void init(Handle<Object> exports) {
-	exports->Set(Nan::New("on").ToLocalChecked(),          Nan::New<FunctionTemplate>(on)->GetFunction());
+	exports->Set(Nan::New("setEmitter").ToLocalChecked(),  Nan::New<FunctionTemplate>(setEmitter)->GetFunction());
 	exports->Set(Nan::New("pumpRunLoop").ToLocalChecked(), Nan::New<FunctionTemplate>(pump_run_loop)->GetFunction());
 	exports->Set(Nan::New("devices").ToLocalChecked(),     Nan::New<FunctionTemplate>(devices)->GetFunction());
 	exports->Set(Nan::New("installApp").ToLocalChecked(),  Nan::New<FunctionTemplate>(installApp)->GetFunction());
 	exports->Set(Nan::New("log").ToLocalChecked(),         Nan::New<FunctionTemplate>(log)->GetFunction());
 
-	listeners = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
 	connectedDevices = CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
 
 	am_device_notification notification;
