@@ -333,7 +333,7 @@ NAN_METHOD(pump_run_loop) {
  * This should be called after pumpRunLoop() has been called.
  */
 NAN_METHOD(devices) {
-	boost::lock_guard<boost::shared_mutex> lock(deviceMutex);
+	boost::shared_lock<boost::shared_mutex> lock(deviceMutex);
 
 	Local<Array> result = Nan::New<Array>();
 
@@ -362,7 +362,7 @@ void on_device_notification(am_device_notification_callback_info* info, void* ar
 	CFStringRef udid = AMDeviceCopyDeviceIdentifier(info->dev);
 	bool exists = false;
 	{
-		boost::lock_guard<boost::shared_mutex> lock(deviceMutex);
+		boost::shared_lock<boost::shared_mutex> lock(deviceMutex);
 		exists = CFDictionaryContainsKey(connectedDevices, udid);
 	}
 
@@ -372,6 +372,9 @@ void on_device_notification(am_device_notification_callback_info* info, void* ar
 
 	} else if (exists && info->msg == ADNCI_MSG_DISCONNECTED) {
 		debug("Device disconnected, cleaning up");
+
+		boost::upgrade_lock<boost::shared_mutex> lock(deviceMutex);
+		boost::upgrade_to_unique_lock<boost::shared_mutex> unique_lock(lock);
 
 		// remove the device from the dictionary and destroy it
 		Device* device = (Device*)CFDictionaryGetValue(connectedDevices, udid);
