@@ -30,9 +30,14 @@ typedef struct Listener {
  * Globals
  */
 static CFMutableDictionaryRef connectedDevices;
-static bool devicesChanged;
-static boost::shared_mutex deviceMutex;
 static Nan::Persistent<Object> emitter;
+
+static std::condition_variable pendingCond;
+static std::mutex pendingMutex;
+static int pendingEvents = 0;
+
+static bool devicesChanged = false;
+static boost::shared_mutex deviceMutex;
 
 /**
  * Emits a debug message.
@@ -272,6 +277,14 @@ static void getDeviceInfo(Device* device) {
 
 	//printf("Disconnecting from device %s\n", device->props["udid"].c_str());
 	device->disconnect();
+
+	std::unique_lock<std::mutex> mlock(pendingMutex);
+	if (pendingEvents > 0) {
+		pendingEvents--;
+	}
+	if (pendingEvents == 0) {
+		pendingCond.notify_one();
+	}
 }
 
 /**
@@ -333,6 +346,11 @@ NAN_METHOD(pump_run_loop) {
  * This should be called after pumpRunLoop() has been called.
  */
 NAN_METHOD(devices) {
+	std::unique_lock<std::mutex> mlock(pendingMutex);
+	if (pendingEvents > 0) {
+		pendingCond.wait(mlock);
+	}
+
 	boost::shared_lock<boost::shared_mutex> lock(deviceMutex);
 
 	Local<Array> result = Nan::New<Array>();
@@ -367,17 +385,27 @@ void on_device_notification(am_device_notification_callback_info* info, void* ar
 	}
 
 	if (!exists && info->msg == ADNCI_MSG_CONNECTED) {
-		debug("Device connected, getting device info");
-		std::thread(getDeviceInfo, new Device(info->dev)).detach();
+		Device* device = new Device(info->dev);
+		debug("Device connected, getting device info: %s", device->props["udid"].c_str());
+
+		// tell devices() to wait until we've fetched the device info
+		std::unique_lock<std::mutex> mlock(pendingMutex);
+		if (pendingEvents < 0) {
+			pendingEvents = 0;
+		}
+		pendingEvents++;
+
+		std::thread(getDeviceInfo, device).detach();
 
 	} else if (exists && info->msg == ADNCI_MSG_DISCONNECTED) {
-		debug("Device disconnected, cleaning up");
-
 		boost::upgrade_lock<boost::shared_mutex> lock(deviceMutex);
 		boost::upgrade_to_unique_lock<boost::shared_mutex> unique_lock(lock);
 
-		// remove the device from the dictionary and destroy it
 		Device* device = (Device*)CFDictionaryGetValue(connectedDevices, udid);
+
+		debug("Device disconnected: %s", device->props["udid"].c_str());
+
+		// remove the device from the dictionary and destroy it
 		CFDictionaryRemoveValue(connectedDevices, udid);
 
 		if (device->logCallback) {
