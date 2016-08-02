@@ -14,25 +14,28 @@
 'use strict';
 
 var debug = require('debug')('node-ios-device');
-var fs = require('fs');
 var EventEmitter = require('events').EventEmitter;
+var fs = require('fs');
 var init = require('node-pre-gyp-init');
 var path = require('path');
 
-// reference counter to track how many trackDevice() calls are active
-var pumping = 0;
-var timer;
 var binding;
+var activeCalls = 0;
 var emitter = new EventEmitter;
 
 emitter.on('debug', debug);
 
-module.exports.pumpInterval = 10;
 module.exports.devices = devices;
 module.exports.trackDevices = trackDevices;
 module.exports.installApp = installApp;
 module.exports.log = log;
 
+/**
+ * Initializes the node-ios-device binding.
+ *
+ * @param {Function} callback - A function to call after node-ios-device has
+ * been loaded and initialized.
+ */
 function initBinding(callback) {
 	if (process.platform !== 'darwin') {
 		return setImmediate(function () {
@@ -54,9 +57,8 @@ function initBinding(callback) {
 		debug('Loading binding: ' + bindingPath);
 		binding = require(bindingPath);
 
-		debug('Setting emitter');
-		binding.setEmitter(emitter);
-		debug('Emitter set');
+		debug('Initializing node-ios-device and setting emitter');
+		binding.initialize(emitter);
 
 		callback();
 	});
@@ -73,11 +75,14 @@ function devices(callback) {
 			return callback(err);
 		}
 
-		debug('Pumping run loop');
-		binding.pumpRunLoop();
-
 		debug('Calling binding.devices()');
-		callback(null, binding.devices());
+		activeCalls++;
+		binding.devices(function (err, devs) {
+			callback(err, devs);
+			if (--activeCalls === 0) {
+				binding.shutdown();
+			}
+		});
 	});
 }
 
@@ -86,12 +91,15 @@ function devices(callback) {
  * device is connected or disconnected, the specified callback is fired.
  *
  * @param {Function} callback(err, devices) - A function to call with the connected devices.
- * @returns {Function} off() - A function that discontinues tracking.
+ * @returns {Function} A function that discontinues tracking.
  */
 function trackDevices(callback) {
 	var stopped = true;
 	var handler = function (devices) {
-		stopped || callback(null, binding.devices());
+		if (!stopped) {
+			debug('Devices changed, calling callback');
+			binding.devices(callback);
+		}
 	};
 
 	initBinding(function (err) {
@@ -99,11 +107,8 @@ function trackDevices(callback) {
 			return callback(err);
 		}
 
-		startPumping();
-
-		// immediately return the array of devices
-		callback(null, binding.devices());
-
+		activeCalls++;
+		binding.devices(callback);
 		stopped = false;
 
 		// listen for any device connects or disconnects
@@ -112,15 +117,11 @@ function trackDevices(callback) {
 
 	// return the stop() function
 	return function () {
-		if (!stopped) {
-			stopped = true;
-			pumping = Math.max(pumping - 1, 0);
-			if (!pumping) {
-				debug('Stopping run loop pump');
-				clearTimeout(timer);
-			}
-		}
+		stopped = true;
 		emitter.removeListener('devicesChanged', handler);
+		if (--activeCalls === 0) {
+			binding.shutdown();
+		}
 	};
 }
 
@@ -146,15 +147,13 @@ function installApp(udid, appPath, callback) {
 			return callback(new Error('Specified .app path is not a valid app'));
 		}
 
-		debug('Pumping run loop');
-		binding.pumpRunLoop();
-
-		try {
-			binding.installApp(udid, appPath);
-			callback(null);
-		} catch (ex) {
-			callback(ex);
-		}
+		activeCalls++;
+		binding.installApp(udid, appPath, function (err) {
+			callback(err);
+			if (--activeCalls === 0) {
+				binding.shutdown();
+			}
+		});
 	});
 }
 
@@ -172,11 +171,9 @@ function log(udid, callback) {
 			return callback(err);
 		}
 
-		// if we're not already pumping, start up the pumper
-		startPumping();
-
 		stopped = false;
 
+		activeCalls++;
 		binding.log(udid, function (msg) {
 			stopped || callback(msg);
 		});
@@ -184,29 +181,9 @@ function log(udid, callback) {
 
 	// return the off() function
 	return function () {
-		if (!stopped) {
-			stopped = true;
-			pumping = Math.max(pumping - 1, 0);
-			if (!pumping) {
-				debug('Stopping run loop pump');
-				clearTimeout(timer);
-			}
+		stopped = true;
+		if (--activeCalls === 0) {
+			binding.shutdown();
 		}
 	};
-}
-
-/**
- * Ticks the CoreFoundation run loop.
- *
- * @param {Object} binding - The native module binding.
- */
-function startPumping() {
-	if (!pumping) {
-		debug('Starting run loop pump');
-		(function pump() {
-			binding.pumpRunLoop();
-			timer = setTimeout(pump, exports.pumpInterval);
-		}());
-	}
-	pumping++;
 }

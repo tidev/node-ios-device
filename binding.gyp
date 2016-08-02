@@ -3,8 +3,14 @@
 		{
 			'target_name': 'node_ios_device',
 			'sources': [
-				'src/ios-device.cpp',
-				'src/mobiledevice.h'
+				'src/device.h',
+				'src/message.h',
+				'src/mobiledevice.h',
+				'src/node-ios-device.cpp',
+				'src/runloop.h',
+				'src/runloop.cpp',
+				'src/util.h',
+				'src/util.cpp'
 			],
 			'libraries': [
 				'/System/Library/Frameworks/CoreFoundation.framework',

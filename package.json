@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "iOS device library",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
