@@ -12,14 +12,11 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <thread>
 
-
-#include <iostream>
-
-
 namespace node_ios_device {
 
 CFMutableDictionaryRef connectedDevices = ::CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, NULL);
 std::mutex deviceMutex;
+CFRunLoopRef runloop;
 static am_device_notification deviceNotification = NULL;
 
 /**
@@ -76,13 +73,15 @@ void startRunLoop() {
 	node_ios_device::debug("Subscribing to device notifications");
 	::AMDeviceNotificationSubscribe(&on_device_notification, 0, 0, NULL, &deviceNotification);
 
+	runloop = ::CFRunLoopGetCurrent();
+
 	node_ios_device::debug("Starting CoreFoundation run loop");
 	::CFRunLoopRun();
 }
 
 void stopRunLoop() {
 	::AMDeviceNotificationUnsubscribe(deviceNotification);
-	::CFRunLoopStop(::CFRunLoopGetCurrent());
+	::CFRunLoopStop(runloop);
 }
 
 // AMDeviceNotificationUnsubscribe(deviceNotification);

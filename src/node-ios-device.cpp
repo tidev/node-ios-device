@@ -12,13 +12,43 @@
 #include <chrono>
 #include <queue>
 #include <thread>
+#include <boost/format.hpp>
 #include "device.h"
 #include "message.h"
 #include "runloop.h"
 
+#define VALIDATE_STRING_ARG(name, var, idx) \
+	if (info.Length() < (idx + 1)) { \
+		return Nan::ThrowError(Exception::Error(Nan::New("Missing \'" name "\' argument").ToLocalChecked())); \
+	} \
+	if (!info[idx]->IsString()) { \
+		return Nan::ThrowError(Exception::Error(Nan::New("Expected \'" name "\' argument to be a string").ToLocalChecked())); \
+	} \
+	v8::Handle<v8::String> var = v8::Handle<v8::String>::Cast(info[idx]); \
+	if (var->Length() == 0) { \
+		return Nan::ThrowError(Exception::Error(Nan::New("The \'" name "\' must not be an empty string").ToLocalChecked())); \
+	}
 
-#include <iostream>
+#define VALIDATE_FUNCTION_ARG(name, var, idx) \
+	if (info.Length() < (idx + 1)) { \
+		return Nan::ThrowError(Exception::Error(Nan::New("Missing \'" name "\' argument").ToLocalChecked())); \
+	} \
+	if (!info[idx]->IsFunction()) { \
+		return Nan::ThrowError(Exception::Error(Nan::New("Expected \'" name "\' argument to be a function").ToLocalChecked())); \
+	} \
+	v8::Local<v8::Function> var = v8::Local<v8::Function>::Cast(info[idx]);
 
+#define VALIDATE_UDID_AND_GET_DEVICE(idx) \
+	VALIDATE_STRING_ARG("udid", udidHandle, idx) \
+	\
+	v8::String::Utf8Value udidValue(udidHandle->ToString()); \
+	node_ios_device::Device* device = getDevice(*udidValue); \
+	\
+	dispatchQueueCallback(NULL); \
+	\
+	if (device == NULL) { \
+		return Nan::ThrowError(Exception::Error(Nan::New((boost::format("Device \'%s\' not connected") % *udidValue).str()).ToLocalChecked())); \
+	}
 
 namespace node_ios_device {
 	Nan::Persistent<v8::Object> emitter;
@@ -32,7 +62,7 @@ namespace node_ios_device {
 /**
  * Async handler when a message has been added to the queue.
  */
-static void dispatchQueueCallback(uv_async_t* handle) {
+static NAUV_WORK_CB(dispatchQueueCallback) {
 	Nan::HandleScope scope;
 	v8::Local<v8::Object> ee = Nan::New(node_ios_device::emitter);
 
@@ -65,14 +95,50 @@ static void dispatchQueueCallback(uv_async_t* handle) {
 }
 
 /**
+ * Adds the async handler to Node's runloop if it's not already there.
+ */
+void startAsyncHandler() {
+	if (::uv_is_active((uv_handle_t*)&node_ios_device::dispatchQueueUpdate) == 0) {
+		::uv_async_init(::uv_default_loop(), &node_ios_device::dispatchQueueUpdate, dispatchQueueCallback);
+	}
+}
+
+/**
+ * Removes the async handler from Node's runloop so that Node can shutdown.
+ */
+void stopAsyncHandler() {
+	if (::uv_is_active((uv_handle_t*)&node_ios_device::dispatchQueueUpdate) != 0) {
+		::uv_close((uv_handle_t*)&node_ios_device::dispatchQueueUpdate, NULL);
+	}
+}
+
+/**
+ * Returns the device descriptor for the specified udid or NULL if the device
+ * does not exist.
+ */
+node_ios_device::Device* getDevice(const char* udid) {
+	node_ios_device::Device* device = NULL;
+	CFStringRef udidStr = ::CFStringCreateWithCString(NULL, udid, kCFStringEncodingUTF8);
+
+	{
+		std::lock_guard<std::mutex> lock(node_ios_device::deviceMutex);
+		if (::CFDictionaryContainsKey(node_ios_device::connectedDevices, udidStr)) {
+			device = (node_ios_device::Device*)::CFDictionaryGetValue(node_ios_device::connectedDevices, udidStr);
+		}
+	}
+
+	::CFRelease(udidStr);
+	return device;
+}
+
+/**
  * initialize()
  * Initializes node-ios-device and the event emitter.
  */
 NAN_METHOD(initialize) {
-	if (info.Length() != 1) {
+	if (info.Length() < 1) {
 		return Nan::ThrowError(Exception::Error(Nan::New("Expected 1 argument").ToLocalChecked()));
 	}
-
 	if (!info[0]->IsObject()) {
 		return Nan::ThrowError(Exception::Error(Nan::New("Argument \'emitter\' must be an object").ToLocalChecked()));
 	}
@@ -94,11 +160,8 @@ NAN_METHOD(initialize) {
  * Defines a JavaScript function that returns a JavaScript array of iOS devices.
  */
 NAN_METHOD(devices) {
-	if (info.Length() < 1 || !info[0]->IsFunction()) {
-		return Nan::ThrowError(Exception::Error(Nan::New("Expected callback to be a function").ToLocalChecked()));
-	}
+	VALIDATE_FUNCTION_ARG("callback", callback, 0)
 
-	v8::Local<v8::Function> callback = v8::Local<v8::Function>::Cast(info[0]);
 	v8::Local<v8::Array> result = Nan::New<v8::Array>();
 	CFIndex size;
 	node_ios_device::Device** values;
@@ -124,8 +187,10 @@ NAN_METHOD(devices) {
 
 	::free(values);
 
+	// flush message queue
 	dispatchQueueCallback(NULL);
 
+	// fire the callback
 	v8::Local<v8::Value> args[] = { Nan::Null(), result };
 	callback->Call(Nan::GetCurrentContext()->Global(), 2, args);
 
@@ -135,255 +200,52 @@ NAN_METHOD(devices) {
 /**
  * installApp()
  * Defines a JavaScript function that installs an iOS app on the specified device.
- * /
+ */
 NAN_METHOD(installApp) {
-	char tmp[256];
+	VALIDATE_UDID_AND_GET_DEVICE(0)
 
-	if (info.Length() < 2 || info[0]->IsUndefined() || info[1]->IsUndefined()) {
-		return Nan::ThrowError(Exception::Error(Nan::New("Missing required arguments \'udid\' and \'appPath\'").ToLocalChecked()));
-	}
-
-	// validate the 'udid'
-	if (!info[0]->IsString()) {
-		return Nan::ThrowError(Exception::Error(Nan::New("Argument \'udid\' must be a string").ToLocalChecked()));
-	}
-
-	Handle<String> udidHandle = Handle<String>::Cast(info[0]);
-	if (udidHandle->Length() == 0) {
-		return Nan::ThrowError(Exception::Error(Nan::New("The \'udid\' must not be an empty string").ToLocalChecked()));
-	}
-
-	String::Utf8Value udidValue(udidHandle->ToString());
-	char* udid = *udidValue;
-	CFStringRef udidStr = CFStringCreateWithCString(NULL, (char*)*udidValue, kCFStringEncodingUTF8);
-
-	if (!CFDictionaryContainsKey(connectedDevices, (const void*)udidStr)) {
-		CFRelease(udidStr);
-		snprintf(tmp, 256, "Device \'%s\' not connected", udid);
-		return Nan::ThrowError(Exception::Error(Nan::New(tmp).ToLocalChecked()));
-	}
-
-	Device* deviceObj = (Device*)CFDictionaryGetValue(connectedDevices, udidStr);
-	CFRelease(udidStr);
-	am_device* device = &deviceObj->handle;
-
-	// validate the 'appPath'
-	if (!info[1]->IsString()) {
-		return Nan::ThrowError(Exception::Error(Nan::New("Argument \'appPath\' must be a string").ToLocalChecked()));
-	}
-
-	Handle<String> appPathHandle = Handle<String>::Cast(info[1]);
-	if (appPathHandle->Length() == 0) {
-		return Nan::ThrowError(Exception::Error(Nan::New("The \'appPath\' must not be an empty string").ToLocalChecked()));
-	}
-
+	VALIDATE_STRING_ARG("appPath", appPathHandle, 1)
 	String::Utf8Value appPathValue(appPathHandle->ToString());
-	char* appPath = *appPathValue;
 
 	// check the file exists
-	if (::access(appPath, F_OK) != 0) {
-		snprintf(tmp, 256, "The app path \'%s\' does not exist", appPath);
-		return Nan::ThrowError(Exception::Error(Nan::New(tmp).ToLocalChecked()));
+	if (::access(*appPathValue, F_OK) != 0) {
+		return Nan::ThrowError(Exception::Error(Nan::New((boost::format("The app path \'%s\' does not exist") % *appPathValue).str()).ToLocalChecked()));
 	}
 
-	// get the path to the app
-	CFStringRef appPathStr = CFStringCreateWithCString(NULL, (char*)*appPathValue, kCFStringEncodingUTF8);
-	CFURLRef relativeUrl = CFURLCreateWithFileSystemPath(NULL, appPathStr, kCFURLPOSIXPathStyle, false);
-	CFURLRef localUrl = CFURLCopyAbsoluteURL(relativeUrl);
-	CFRelease(appPathStr);
-	CFRelease(relativeUrl);
+	VALIDATE_FUNCTION_ARG("callback", callback, 2)
 
 	try {
-		deviceObj->connect();
+		// perform the installation
+		device->install(*appPathValue);
 	} catch (std::runtime_error& e) {
 		return Nan::ThrowError(Exception::Error(Nan::New(e.what()).ToLocalChecked()));
 	}
 
-	CFStringRef keys[] = { CFSTR("PackageType") };
-	CFStringRef values[] = { CFSTR("Developer") };
-	CFDictionaryRef options = CFDictionaryCreate(NULL, (const void **)&keys, (const void **)&values, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+	// flush message queue
+	dispatchQueueCallback(NULL);
 
-	// copy .app to device
-	mach_error_t rval = AMDeviceSecureTransferPath(0, *device, localUrl, options, NULL, 0);
-	if (rval != MDERR_OK) {
-		AMDeviceStopSession(*device);
-		AMDeviceDisconnect(*device);
-		deviceObj->connected--;
-		CFRelease(options);
-		CFRelease(localUrl);
-		if (rval == -402653177) {
-			return Nan::ThrowError(Exception::Error(Nan::New("Failed to copy app to device: can't install app that contains symlinks").ToLocalChecked()));
-		} else {
-			snprintf(tmp, 256, "Failed to copy app to device (0x%x)", rval);
-			return Nan::ThrowError(Exception::Error(Nan::New(tmp).ToLocalChecked()));
-		}
-	}
-
-	// install package on device
-	rval = AMDeviceSecureInstallApplication(0, *device, localUrl, options, NULL, 0);
-	if (rval != MDERR_OK) {
-		AMDeviceStopSession(*device);
-		AMDeviceDisconnect(*device);
-		deviceObj->connected--;
-		CFRelease(options);
-		CFRelease(localUrl);
-		if (rval == -402620395) {
-			return Nan::ThrowError(Exception::Error(Nan::New("Failed to install app on device: most likely a provisioning profile issue").ToLocalChecked()));
-		} else {
-			snprintf(tmp, 256, "Failed to install app on device (0x%x)", rval);
-			return Nan::ThrowError(Exception::Error(Nan::New(tmp).ToLocalChecked()));
-		}
-	}
-
-	// cleanup
-	deviceObj->disconnect();
-	CFRelease(options);
-	CFRelease(localUrl);
+	// fire the callback
+	callback->Call(Nan::GetCurrentContext()->Global(), 0, NULL);
 
 	info.GetReturnValue().SetUndefined();
 }
-*/
-
-/**
- * Handles new data from the socket when listening for a device's syslog messages.
- * /
-void LogSocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info) {
-	Device* device = (Device*)info;
-	Local<Function> callback = Nan::New<Function>(device->logCallback->callback);
-	CFIndex length = CFDataGetLength((CFDataRef)data);
-	const char *buffer = (const char*)CFDataGetBytePtr((CFDataRef)data);
-	char* str = new char[length + 1];
-	long i = 0;
-	long j = 0;
-	char c;
-	Handle<Value> argv[1];
-
-	while (length) {
-		while (*buffer == '\0') {
-			buffer++;
-			length--;
-			if (length == 0)
-				return;
-		}
-
-		i = j = 0;
-
-		while (i < length) {
-			c = str[j] = buffer[i++];
-			if (c == '\n' || c == '\0') {
-				str[j] = '\0';
-				if (j > 0) {
-					argv[0] = Nan::New(str).ToLocalChecked();
-					callback->Call(Nan::GetCurrentContext()->Global(), 1, argv);
-				}
-				j = 0;
-				if (c == '\0') {
-					break;
-				}
-			} else {
-				++j;
-			}
-		}
-
-		length -= i;
-		buffer += i;
-	}
-
-	delete[] str;
-}
-*/
 
 /**
  * log()
  * Connects to the device and fires the callback with each line of output from
  * the device's syslog.
- * /
-NAN_METHOD(log) {
-	char tmp[256];
-
-	if (info.Length() < 2 || info[0]->IsUndefined() || info[1]->IsUndefined()) {
-		return Nan::ThrowError(Exception::Error(Nan::New("Missing required arguments \'udid\' and \'appPath\'").ToLocalChecked()));
-	}
-
-	// validate the 'udid'
-	if (!info[0]->IsString()) {
-		return Nan::ThrowError(Exception::Error(Nan::New("Argument \'udid\' must be a string").ToLocalChecked()));
-	}
-
-	Handle<String> udidHandle = Handle<String>::Cast(info[0]);
-	if (udidHandle->Length() == 0) {
-		return Nan::ThrowError(Exception::Error(Nan::New("The \'udid\' must not be an empty string").ToLocalChecked()));
-	}
-
-	String::Utf8Value udidValue(udidHandle->ToString());
-	char* udid = *udidValue;
-	CFStringRef udidStr = CFStringCreateWithCString(NULL, (char*)*udidValue, kCFStringEncodingUTF8);
-
-	if (!CFDictionaryContainsKey(node_ios_device::connectedDevices, (const void*)udidStr)) {
-		CFRelease(udidStr);
-		snprintf(tmp, 256, "Device \'%s\' not connected", udid);
-		return Nan::ThrowError(Exception::Error(Nan::New(tmp).ToLocalChecked()));
-	}
-
-	if (!info[1]->IsFunction()) {
-		return Nan::ThrowError(Exception::Error(Nan::New("Argument \'callback\' must be a function").ToLocalChecked()));
-	}
-
-	Listener* logCallback = new Listener;
-	logCallback->callback.Reset(Local<Function>::Cast(info[1]));
-
-	Device* deviceObj = (Device*)CFDictionaryGetValue(node_ios_device::connectedDevices, udidStr);
-	CFRelease(udidStr);
-
-	// It's possible for the iOS device to not be connected wirelessly instead
-	// of with a cable. If that's the case, then AMDeviceStartService() will
-	// fail to start the com.apple.syslog_relay service.
-	if (!deviceObj->hostConnected) {
-		return Nan::ThrowError(Exception::Error(Nan::New("iOS device must be connected to host").ToLocalChecked()));
-	}
-
-	service_conn_t connection;
-
-	try {
-		deviceObj->connect();
-		deviceObj->startService(AMSVC_SYSLOG_RELAY, &connection);
-	} catch (std::runtime_error& e) {
-		return Nan::ThrowError(Exception::Error(Nan::New(e.what()).ToLocalChecked()));
-	}
-
-	deviceObj->disconnect();
-
-	CFSocketContext socketCtx = { 0, deviceObj, NULL, NULL, NULL };
-	CFSocketRef socket = CFSocketCreateWithNative(kCFAllocatorDefault, connection, kCFSocketDataCallBack, LogSocketCallback, &socketCtx);
-	if (!socket) {
-		return Nan::ThrowError(Exception::Error(Nan::New("Failed to create socket").ToLocalChecked()));
-	}
-
-	CFRunLoopSourceRef source = CFSocketCreateRunLoopSource(kCFAllocatorDefault, socket, 0);
-	if (!source) {
-		return Nan::ThrowError(Exception::Error(Nan::New("Failed to create socket run loop source").ToLocalChecked()));
-	}
-
-	CFRunLoopAddSource(CFRunLoopGetMain(), source, kCFRunLoopCommonModes);
-
-	if (deviceObj->logCallback) {
-		delete deviceObj->logCallback;
-	}
-	if (deviceObj->logSource) {
-		CFRelease(deviceObj->logSource);
-	}
-	if (deviceObj->logSocket) {
-		CFRelease(deviceObj->logSocket);
-	}
-
-	deviceObj->logConnection = connection;
-	deviceObj->logSocket = socket;
-	deviceObj->logSource = source;
-	deviceObj->logCallback = logCallback;
-
+ */
+NAN_METHOD(startLogRelay) {
+	VALIDATE_UDID_AND_GET_DEVICE(0)
+	device->startLogRelay();
 	info.GetReturnValue().SetUndefined();
 }
-*/
+
+NAN_METHOD(stopLogRelay) {
+	VALIDATE_UDID_AND_GET_DEVICE(0)
+	device->stopLogRelay();
+	info.GetReturnValue().SetUndefined();
+}
 
 /**
  * Called when Node begins to shutdown so that we can clean up any allocated memory.
@@ -405,18 +267,38 @@ static void cleanup(void *arg) {
 
 	::free(keys);
 
-	if (::uv_is_active((uv_handle_t*)&node_ios_device::dispatchQueueUpdate) != 0) {
-		::uv_close((uv_handle_t*)&node_ios_device::dispatchQueueUpdate, NULL);
-	}
-
+	stopAsyncHandler();
 	node_ios_device::stopRunLoop();
 }
 
 /**
+ * resume()
+ * Starts the async handler if it's not already. This should be called when you
+ * expect messages from the runloop thread.
+ */
+NAN_METHOD(resume) {
+	startAsyncHandler();
+	info.GetReturnValue().SetUndefined();
+}
+
+/**
+ * suspend()
+ * Stops the async handler. This should be called when you are no longer
+ * expecting any messages from the runloop thread so that Node can properly
+ * exit.
+ */
+NAN_METHOD(suspend) {
+	stopAsyncHandler();
+	info.GetReturnValue().SetUndefined();
+}
+
+/**
+ * shutdown()
  * Stops all run loops and releases memory.
  */
 NAN_METHOD(shutdown) {
 	cleanup(NULL);
+	info.GetReturnValue().SetUndefined();
 }
 
 /**
@@ -424,13 +306,16 @@ NAN_METHOD(shutdown) {
  * to the device notifications.
  */
 static void init(Handle<Object> exports) {
-	::uv_async_init(::uv_default_loop(), &node_ios_device::dispatchQueueUpdate, dispatchQueueCallback);
+	startAsyncHandler();
 
-	exports->Set(Nan::New("initialize").ToLocalChecked(),  Nan::New<FunctionTemplate>(initialize)->GetFunction());
-	exports->Set(Nan::New("shutdown").ToLocalChecked(),    Nan::New<FunctionTemplate>(shutdown)->GetFunction());
-	exports->Set(Nan::New("devices").ToLocalChecked(),     Nan::New<FunctionTemplate>(devices)->GetFunction());
-//	exports->Set(Nan::New("installApp").ToLocalChecked(),  Nan::New<FunctionTemplate>(installApp)->GetFunction());
-//	exports->Set(Nan::New("log").ToLocalChecked(),         Nan::New<FunctionTemplate>(log)->GetFunction());
+	exports->Set(Nan::New("initialize").ToLocalChecked(),    Nan::New<FunctionTemplate>(initialize)->GetFunction());
+	exports->Set(Nan::New("resume").ToLocalChecked(),        Nan::New<FunctionTemplate>(resume)->GetFunction());
+	exports->Set(Nan::New("suspend").ToLocalChecked(),       Nan::New<FunctionTemplate>(suspend)->GetFunction());
+	exports->Set(Nan::New("shutdown").ToLocalChecked(),      Nan::New<FunctionTemplate>(shutdown)->GetFunction());
+	exports->Set(Nan::New("devices").ToLocalChecked(),       Nan::New<FunctionTemplate>(devices)->GetFunction());
+	exports->Set(Nan::New("installApp").ToLocalChecked(),    Nan::New<FunctionTemplate>(installApp)->GetFunction());
+	exports->Set(Nan::New("startLogRelay").ToLocalChecked(), Nan::New<FunctionTemplate>(startLogRelay)->GetFunction());
+	exports->Set(Nan::New("stopLogRelay").ToLocalChecked(),  Nan::New<FunctionTemplate>(stopLogRelay)->GetFunction());
 
 	node::AtExit(cleanup);
 }

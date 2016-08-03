@@ -7,10 +7,12 @@ iosDevice.devices(function (err, devices) {
 	}
 
 	console.log(devices);
+	console.log('=====================================================');
+	return;
 
 	devices.forEach(function (device) {
 		iosDevice.log(device.udid, function (msg) {
-			console.log(msg);
+			console.log('[' + device.udid + ']  ' + msg);
 		});
 	});
 });

@@ -50,18 +50,18 @@ void debug(const std::string& output) {
  */
 void debug(const char* format, ...) {
 	int final_n;
-	int n = strlen(format) * 2;
+	int n = ::strlen(format) * 2;
 	std::string str;
 	std::unique_ptr<char[]> formatted;
 	va_list ap;
 	while(1) {
 		formatted.reset(new char[n]);
-		strcpy(&formatted[0], format);
-		va_start(ap, format);
-		final_n = vsnprintf(&formatted[0], n, format, ap);
-		va_end(ap);
+		::strcpy(&formatted[0], format);
+		::va_start(ap, format);
+		final_n = ::vsnprintf(&formatted[0], n, format, ap);
+		::va_end(ap);
 		if (final_n < 0 || final_n >= n) {
-			n += abs(final_n - n + 1);
+			n += ::abs(final_n - n + 1);
 		} else {
 			break;
 		}
@@ -75,10 +75,10 @@ void debug(const char* format, ...) {
 char* cfstring_to_cstr(CFStringRef str) {
 	if (str != NULL) {
 		// add 1 to make sure there's enough buffer for the utf-8 string and the null character
-		CFIndex length = CFStringGetLength(str) + 1;
-		CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
-		char* buffer = (char*)malloc(maxSize);
-		if (CFStringGetCString(str, buffer, maxSize, kCFStringEncodingUTF8)) {
+		CFIndex length = ::CFStringGetLength(str) + 1;
+		CFIndex maxSize = ::CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
+		char* buffer = (char*)::malloc(maxSize);
+		if (::CFStringGetCString(str, buffer, maxSize, kCFStringEncodingUTF8)) {
 			return buffer;
 		}
 	}
