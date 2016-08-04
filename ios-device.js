@@ -14,25 +14,28 @@
 'use strict';
 
 var debug = require('debug')('node-ios-device');
-var fs = require('fs');
 var EventEmitter = require('events').EventEmitter;
+var fs = require('fs');
 var init = require('node-pre-gyp-init');
 var path = require('path');
 
-// reference counter to track how many trackDevice() calls are active
-var pumping = 0;
-var timer;
 var binding;
+var activeCalls = 0;
 var emitter = new EventEmitter;
 
 emitter.on('debug', debug);
 
-module.exports.pumpInterval = 10;
 module.exports.devices = devices;
 module.exports.trackDevices = trackDevices;
 module.exports.installApp = installApp;
 module.exports.log = log;
 
+/**
+ * Internal helper function that initializes the node-ios-device binding.
+ *
+ * @param {Function} callback - A function to call after node-ios-device has
+ * been loaded and initialized.
+ */
 function initBinding(callback) {
 	if (process.platform !== 'darwin') {
 		return setImmediate(function () {
@@ -54,9 +57,8 @@ function initBinding(callback) {
 		debug('Loading binding: ' + bindingPath);
 		binding = require(bindingPath);
 
-		debug('Setting emitter');
-		binding.setEmitter(emitter);
-		debug('Emitter set');
+		debug('Initializing node-ios-device and setting emitter');
+		binding.initialize(emitter);
 
 		callback();
 	});
@@ -73,11 +75,15 @@ function devices(callback) {
 			return callback(err);
 		}
 
-		debug('Pumping run loop');
-		binding.pumpRunLoop();
-
 		debug('Calling binding.devices()');
-		callback(null, binding.devices());
+		activeCalls++;
+
+		binding.devices(function (err, devs) {
+			callback(err, devs);
+			if (--activeCalls === 0) {
+				binding.suspend();
+			}
+		});
 	});
 }
 
@@ -86,12 +92,15 @@ function devices(callback) {
  * device is connected or disconnected, the specified callback is fired.
  *
  * @param {Function} callback(err, devices) - A function to call with the connected devices.
- * @returns {Function} off() - A function that discontinues tracking.
+ * @returns {Function} A function that discontinues tracking.
  */
 function trackDevices(callback) {
 	var stopped = true;
 	var handler = function (devices) {
-		stopped || callback(null, binding.devices());
+		if (!stopped) {
+			debug('Devices changed, calling callback');
+			binding.devices(callback);
+		}
 	};
 
 	initBinding(function (err) {
@@ -99,28 +108,22 @@ function trackDevices(callback) {
 			return callback(err);
 		}
 
-		startPumping();
-
-		// immediately return the array of devices
-		callback(null, binding.devices());
-
+		activeCalls++;
+		binding.devices(callback);
 		stopped = false;
 
 		// listen for any device connects or disconnects
+		binding.resume();
 		emitter.on('devicesChanged', handler);
 	});
 
 	// return the stop() function
-	return function () {
-		if (!stopped) {
-			stopped = true;
-			pumping = Math.max(pumping - 1, 0);
-			if (!pumping) {
-				debug('Stopping run loop pump');
-				clearTimeout(timer);
-			}
-		}
+	return function stop() {
+		stopped = true;
 		emitter.removeListener('devicesChanged', handler);
+		if (--activeCalls === 0) {
+			binding.suspend();
+		}
 	};
 }
 
@@ -139,22 +142,28 @@ function installApp(udid, appPath, callback) {
 
 		appPath = path.resolve(appPath);
 
-		if (!fs.existsSync(appPath)) {
+		try {
+			if (!fs.statSync(appPath).isDirectory()) {
+				return callback(new Error('Specified .app path is not a valid app'));
+			}
+		} catch (e) {
 			return callback(new Error('Specified .app path does not exist'));
 		}
-		if (!fs.statSync(appPath).isDirectory() || !fs.existsSync(path.join(appPath, 'PkgInfo'))) {
+
+		try {
+			fs.statSync(path.join(appPath, 'PkgInfo'));
+		} catch (e) {
 			return callback(new Error('Specified .app path is not a valid app'));
 		}
 
-		debug('Pumping run loop');
-		binding.pumpRunLoop();
-
-		try {
-			binding.installApp(udid, appPath);
-			callback(null);
-		} catch (ex) {
-			callback(ex);
-		}
+		activeCalls++;
+		binding.resume();
+		binding.installApp(udid, appPath, function (err) {
+			callback(err);
+			if (--activeCalls === 0) {
+				binding.suspend();
+			}
+		});
 	});
 }
 
@@ -163,6 +172,7 @@ function installApp(udid, appPath, callback) {
  *
  * @param {String} udid - The device udid to forward log messages.
  * @param {Function} callback(err) - A function to call with each log message.
+ * @returns {Function} - A function to that stops streaming the log output.
  */
 function log(udid, callback) {
 	var stopped = true;
@@ -172,41 +182,26 @@ function log(udid, callback) {
 			return callback(err);
 		}
 
-		// if we're not already pumping, start up the pumper
-		startPumping();
-
 		stopped = false;
+		activeCalls++;
 
-		binding.log(udid, function (msg) {
-			stopped || callback(msg);
-		});
+		emitter.on(udid, callback);
+
+		binding.resume();
+		binding.startLogRelay(udid);
 	});
 
-	// return the off() function
-	return function () {
-		if (!stopped) {
-			stopped = true;
-			pumping = Math.max(pumping - 1, 0);
-			if (!pumping) {
-				debug('Stopping run loop pump');
-				clearTimeout(timer);
-			}
+	// return the stop() function
+	return function stop() {
+		stopped = true;
+		emitter.removeListener(udid, callback);
+
+		if (emitter._events[udid].length <= 0) {
+			binding.stopLogRelay(udid);
+		}
+
+		if (--activeCalls === 0) {
+			binding.suspend();
 		}
 	};
-}
-
-/**
- * Ticks the CoreFoundation run loop.
- *
- * @param {Object} binding - The native module binding.
- */
-function startPumping() {
-	if (!pumping) {
-		debug('Starting run loop pump');
-		(function pump() {
-			binding.pumpRunLoop();
-			timer = setTimeout(pump, exports.pumpInterval);
-		}());
-	}
-	pumping++;
 }
