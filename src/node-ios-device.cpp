@@ -44,7 +44,7 @@
 	v8::String::Utf8Value udidValue(udidHandle->ToString()); \
 	node_ios_device::Device* device = getDevice(*udidValue); \
 	\
-	dispatchQueueCallback(NULL); \
+	flushMessageQueue(); \
 	\
 	if (device == NULL) { \
 		return Nan::ThrowError(Exception::Error(Nan::New((boost::format("Device \'%s\' not connected") % *udidValue).str()).ToLocalChecked())); \
@@ -54,15 +54,26 @@ namespace node_ios_device {
 	Nan::Persistent<v8::Object> emitter;
 	std::queue<node_ios_device::Message*> msgQueue;
 	std::mutex msgQueueMutex;
-	uv_async_t dispatchQueueUpdate;
+	uv_async_t msgQueueUpdate;
 	extern CFMutableDictionaryRef connectedDevices;
 	extern std::mutex deviceMutex;
+	extern std::timed_mutex initMutex;
 }
+
+/**
+ * The function signature for libuv's uv_async_cb changed, so this macro wraps
+ * the correct signature.
+ */
+#if NAUV_UVVERSION < 0x000b17
+#  define flushMessageQueue() messageQueueCallback(NULL, 0)
+#else
+#  define flushMessageQueue() messageQueueCallback(NULL)
+#endif
 
 /**
  * Async handler when a message has been added to the queue.
  */
-static NAUV_WORK_CB(dispatchQueueCallback) {
+static NAUV_WORK_CB(messageQueueCallback) {
 	Nan::HandleScope scope;
 	v8::Local<v8::Object> ee = Nan::New(node_ios_device::emitter);
 
@@ -95,20 +106,20 @@ static NAUV_WORK_CB(dispatchQueueCallback) {
 }
 
 /**
- * Adds the async handler to Node's runloop if it's not already there.
+ * Adds the async handler to Node's run loop if it's not already there.
  */
 void startAsyncHandler() {
-	if (::uv_is_active((uv_handle_t*)&node_ios_device::dispatchQueueUpdate) == 0) {
-		::uv_async_init(::uv_default_loop(), &node_ios_device::dispatchQueueUpdate, dispatchQueueCallback);
+	if (::uv_is_active((uv_handle_t*)&node_ios_device::msgQueueUpdate) == 0) {
+		::uv_async_init(::uv_default_loop(), &node_ios_device::msgQueueUpdate, messageQueueCallback);
 	}
 }
 
 /**
- * Removes the async handler from Node's runloop so that Node can shutdown.
+ * Removes the async handler from Node's run loop so that Node can shutdown.
  */
 void stopAsyncHandler() {
-	if (::uv_is_active((uv_handle_t*)&node_ios_device::dispatchQueueUpdate) != 0) {
-		::uv_close((uv_handle_t*)&node_ios_device::dispatchQueueUpdate, NULL);
+	if (::uv_is_active((uv_handle_t*)&node_ios_device::msgQueueUpdate) != 0) {
+		::uv_close((uv_handle_t*)&node_ios_device::msgQueueUpdate, NULL);
 	}
 }
 
@@ -146,11 +157,17 @@ NAN_METHOD(initialize) {
 	node_ios_device::emitter.Reset(Local<Object>::Cast(info[0]));
 	node_ios_device::debug("Initialized node-ios-device emitter");
 
-	node_ios_device::debug("Starting runloop thread");
+	node_ios_device::debug("Starting run loop thread");
 	std::thread(node_ios_device::startRunLoop).detach();
 
-	// wait 250ms for the runloop thread to receive initial events
-	std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	// we need to wait until the run loop has had time to process the initial
+	// device notifications, so we first lock the mutex ourselves, then we wait
+	// 2 seconds for the run loop will unlock it
+	node_ios_device::initMutex.lock();
+
+	// then we try to re-lock it, but we need to wait for the run loop thread
+	// to unlock it first
+	node_ios_device::initMutex.try_lock_for(std::chrono::seconds(2));
 
 	info.GetReturnValue().SetUndefined();
 }
@@ -188,7 +205,7 @@ NAN_METHOD(devices) {
 	::free(values);
 
 	// flush message queue
-	dispatchQueueCallback(NULL);
+	flushMessageQueue();
 
 	// fire the callback
 	v8::Local<v8::Value> args[] = { Nan::Null(), result };
@@ -222,7 +239,7 @@ NAN_METHOD(installApp) {
 	}
 
 	// flush message queue
-	dispatchQueueCallback(NULL);
+	flushMessageQueue();
 
 	// fire the callback
 	callback->Call(Nan::GetCurrentContext()->Global(), 0, NULL);
@@ -231,7 +248,7 @@ NAN_METHOD(installApp) {
 }
 
 /**
- * log()
+ * startLogRelay()
  * Connects to the device and fires the callback with each line of output from
  * the device's syslog.
  */
@@ -241,6 +258,10 @@ NAN_METHOD(startLogRelay) {
 	info.GetReturnValue().SetUndefined();
 }
 
+/**
+ * stopLogRelay()
+ * Stops relaying the device's syslog.
+ */
 NAN_METHOD(stopLogRelay) {
 	VALIDATE_UDID_AND_GET_DEVICE(0)
 	device->stopLogRelay();
@@ -251,22 +272,6 @@ NAN_METHOD(stopLogRelay) {
  * Called when Node begins to shutdown so that we can clean up any allocated memory.
  */
 static void cleanup(void *arg) {
-	std::lock_guard<std::mutex> lock(node_ios_device::deviceMutex); // I don't think we really need this
-
-	// free up connected devices
-	CFIndex size = ::CFDictionaryGetCount(node_ios_device::connectedDevices);
-	CFStringRef* keys = (CFStringRef*)::malloc(size * sizeof(CFStringRef));
-	::CFDictionaryGetKeysAndValues(node_ios_device::connectedDevices, (const void **)keys, NULL);
-	CFIndex i = 0;
-
-	for (; i < size; i++) {
-		node_ios_device::Device* device = (node_ios_device::Device*)::CFDictionaryGetValue(node_ios_device::connectedDevices, keys[i]);
-		::CFDictionaryRemoveValue(node_ios_device::connectedDevices, keys[i]);
-		delete device;
-	}
-
-	::free(keys);
-
 	stopAsyncHandler();
 	node_ios_device::stopRunLoop();
 }
@@ -274,7 +279,7 @@ static void cleanup(void *arg) {
 /**
  * resume()
  * Starts the async handler if it's not already. This should be called when you
- * expect messages from the runloop thread.
+ * expect messages from the run loop thread.
  */
 NAN_METHOD(resume) {
 	startAsyncHandler();
@@ -284,7 +289,7 @@ NAN_METHOD(resume) {
 /**
  * suspend()
  * Stops the async handler. This should be called when you are no longer
- * expecting any messages from the runloop thread so that Node can properly
+ * expecting any messages from the run loop thread so that Node can properly
  * exit.
  */
 NAN_METHOD(suspend) {

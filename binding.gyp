@@ -14,9 +14,7 @@
 			],
 			'libraries': [
 				'/System/Library/Frameworks/CoreFoundation.framework',
-				'/System/Library/PrivateFrameworks/MobileDevice.framework',
-				'../deps/boost/lib/libboost_system.a',
-				'../deps/boost/lib/libboost_thread.a'
+				'/System/Library/PrivateFrameworks/MobileDevice.framework'
 			],
 			'mac_framework_dirs': [
 				'/System/Library/PrivateFrameworks'

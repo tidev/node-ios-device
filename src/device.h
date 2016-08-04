@@ -259,6 +259,9 @@ private:
 	 * connected counter so that we don't connect more than once.
 	 */
 	void connect() {
+		if (this->connected < 0) {
+			this->connected = 0;
+		}
 		if (this->connected++ > 0) {
 			debug("Already connected");
 			// already connected
@@ -318,8 +321,9 @@ private:
 	 * destructor.
 	 */
 	void disconnect(const bool force = false) {
-		if (force || --this->connected <= 0) {
-			this->connected = 0;
+		this->connected--;
+
+		if (this->connected == 0 || (force && this->connected > 0)) {
 			debug("Stopping session: %s", this->props["udid"].c_str());
 			::AMDeviceStopSession(this->handle);
 			debug("Disconnecting from device: %s", this->props["udid"].c_str());
@@ -327,6 +331,8 @@ private:
 		} else {
 			debug("Already disconnected");
 		}
+
+		this->connected = 0;
 	}
 
 	/**

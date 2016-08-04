@@ -16,7 +16,7 @@ namespace node_ios_device {
 extern Nan::Persistent<v8::Object> emitter;
 extern std::queue<Message*> msgQueue;
 extern std::mutex msgQueueMutex;
-extern uv_async_t dispatchQueueUpdate;
+extern uv_async_t msgQueueUpdate;
 
 void send(const char* event) {
 	send(std::string(event), std::string());
@@ -35,7 +35,7 @@ void send(const std::string& event, const std::string& data) {
 		std::lock_guard<std::mutex> lock(msgQueueMutex);
 		msgQueue.push(new Message(event, data));
 	}
-	uv_async_send(&dispatchQueueUpdate);
+	uv_async_send(&msgQueueUpdate);
 }
 
 /**

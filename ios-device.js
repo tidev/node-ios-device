@@ -77,6 +77,7 @@ function devices(callback) {
 
 		debug('Calling binding.devices()');
 		activeCalls++;
+
 		binding.devices(function (err, devs) {
 			callback(err, devs);
 			if (--activeCalls === 0) {

@@ -13,14 +13,17 @@ iosDevice.devices(function (err, devices) {
 		return;
 	}
 
-	var stopLog = iosDevice.log(devices[0].udid, function (msg) {
-		console.log('[' + device[0].udid + ']  ' + msg);
+	var udid = devices[0].udid;
+
+	var stopLog = iosDevice.log(udid, function (msg) {
+		console.log(msg);
 	});
 
 	console.log('=====================================================');
 	console.log('Installing app');
 	console.log('=====================================================');
-	iosDevice.installApp(devices[0].udid, process.argv.length > 2 ? process.argv[2] : __dirname + '/TestApp.app', function (err) {
+
+	iosDevice.installApp(udid, process.argv.length > 2 ? process.argv[2] : __dirname + '/TestApp.app', function (err) {
 		if (err) {
 			console.error('ERROR!!!');
 			console.error(err);
