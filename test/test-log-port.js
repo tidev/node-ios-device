@@ -15,7 +15,7 @@ iosDevice.devices(function (err, devices) {
 	}
 
 	iosDevice
-		.log(devices[0].udid)
+		.log(devices[0].udid, 10571)
 		.on('log', console.log)
 		.on('error', function (err) {
 			console.error('Error!', err);
