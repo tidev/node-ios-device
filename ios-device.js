@@ -242,6 +242,7 @@ function log(udid, port) {
 			} else if (running) {
 				// device was disconnected
 				debug('Device was disconnected');
+				handle.emit('disconnect');
 			} else {
 				// device was never connected
 				handle.stop();

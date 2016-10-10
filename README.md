@@ -96,6 +96,11 @@ Retrieves an array of all connected iOS devices.
 	* `{null|Error} err` - An `Error` if there was a problem, otherwise `null`
 	* `{Array<Object>} devices` - An array of Device objects
 
+Note that only devices connected via a USB cable will be returned. Devices
+connected via Wi-Fi will not be returned. The main reason we do this is because
+you can only relay the syslog from USB connected devices. This restriction be
+lifted in the future.
+
 Device objects contain the following information:
 
 * `udid` - The device's unique device id (e.g. "a4cbe14c0441a2bf87f397602653a4ac71eb0336")
@@ -123,9 +128,14 @@ tracking devices.
 
 #### Event: 'devices'
 
+Emitted when a device is connected or disconnected.
+
 - `{Array<Object>} devices` - An array of devices
 
 #### Event: 'error'
+
+Emitted if there was an error such as platform is unsupported, failed to load or
+compile a compatible `node-ios-device` binary, or failed to detect devices.
 
 - `{Error} err` - The error
 
@@ -162,6 +172,13 @@ port, it will relay the device's syslog and you'll need to parse out any app
 specific output yourself. If you specify a port, then it will connect to that
 port and relay all messages.
 
+Starting with iOS 10, relaying the syslog is virtually useless. iOS 10 has a new
+logging system that skips the syslog. You can get log output using the `log`
+command introduced in macOS Sierra, but it's not available for OS X El Capitan
+users. Because of this, `node-ios-device` added the ability to specify a port,
+but then your iOS app must contain a TCP server that accepts connects and
+outputs log messages to the `node-ios-device` log.
+
 * `{String} udid` - The device udid
 * `{String} port` (optional) - The TCP port listening in the iOS app to connect to
 
@@ -170,14 +187,29 @@ emitting messages.
 
 #### Event: 'log'
 
-- `{String} message` - The log message. one line per 'log' event. Empty lines
-  are omitted.
+Emitted for each line of output. Empty lines are omitted.
+
+- `{String} message` - The log message.
 
 #### Event: 'app-started'
 
+Emitted when `node-ios-device` is able to successfully connect to the specified
+port on the device. This is only supported when specifying a port.
+
 #### Event: 'app-quit'
 
+Emitted when the app is quit. This is only supported when specifying a port.
+
+#### Event: 'disconnect'
+
+Emitted when the device is physically disconnected. Note that this does not stop
+the log relaying. You must manually call `handle.stop()`.
+
 #### Event: 'error'
+
+Emitted if there was an error such as if the device is not initially connected,
+platform is unsupported, failed to load or compile a compatible
+`node-ios-device` binary, or failed to detect devices.
 
 - `{Error} err` - The error
 
@@ -218,7 +250,9 @@ iosDevice
 	});
 ```
 
-## Development
+## Maintainer Info
+
+### Development
 
 To manually build `node-ios-device`, simply run:
 
@@ -243,7 +277,7 @@ To debug `node-ios-device`,
  - Add the environment variable `DEBUG=*`
  - Close out the schemes and click "Run"
 
-## Publishing
+### Publishing
 
 This section is intended for Appcelerator release managers.
 
