@@ -50,7 +50,7 @@ iosDevice.devices(function (err, devices) {
 // continuously watch for devices to be connected or disconnected
 iosDevice
 	.trackDevices()
-	.on('device', function (devices) {
+	.on('devices', function (devices) {
 		console.log('Connected devices:');
 		console.log(devices);
 	})
