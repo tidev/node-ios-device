@@ -42,8 +42,8 @@
     "build-n-publish-binding": "node-pre-gyp rebuild package publish",
     "prepublish": "./bin/build-all.sh",
     "rebuild": "node-pre-gyp rebuild",
-	"rebuild-debug": "node-pre-gyp --debug rebuild",
-	"xcode": "node-pre-gyp configure -- -f xcode"
+    "rebuild-debug": "node-pre-gyp --debug rebuild",
+    "xcode": "node-pre-gyp configure -- -f xcode"
   },
   "binary": {
     "module_name": "node_ios_device",
