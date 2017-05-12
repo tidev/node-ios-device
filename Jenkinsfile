@@ -2,7 +2,7 @@
 library 'pipeline-library'
 
 timestamps {
-  node('osx && npm-publish') {
+  node('osx && npm-publish && xcode-8.1') {
     def packageVersion = ''
     def isPR = false
     stage('Checkout') {
@@ -58,8 +58,7 @@ timestamps {
 
         stage('Publish') {
           if (!isPR) {
-            // TODO Upload binaries to s3?
-            sh 'npm publish'
+            sh 'npm publish' // This uploads the compiled binaries to s3 for us
             // Trigger appc-cli-wrapper job
             build job: 'appc-cli-wrapper', wait: false
           }
