@@ -29,8 +29,10 @@ timestamps {
               sh 'npm install -g yarn'
             }
             sh 'yarn install'
+            sh './bin/build-all.sh'
             // no unit tests!
             fingerprint 'package.json'
+            archiveArtifacts 'binding/**/*'
             // Don't tag PRs
             if (!isPR) {
               pushGitTag(name: packageVersion, message: "See ${env.BUILD_URL} for more information.", force: true)
@@ -56,6 +58,7 @@ timestamps {
 
         stage('Publish') {
           if (!isPR) {
+            // TODO Upload binaries to s3?
             sh 'npm publish'
             // Trigger appc-cli-wrapper job
             build job: 'appc-cli-wrapper', wait: false
