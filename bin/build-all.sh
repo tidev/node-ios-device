@@ -12,21 +12,22 @@ targets=(
 	6.9.5     # 48
 	7.5.0     # 51
 )
+
+if [[ $NODE == "" ]]; then
+	NODE=`which node`
+fi
+
 cwd=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 node_pre_gyp="$(dirname "$cwd")/node_modules/node-pre-gyp/bin/node-pre-gyp"
 args='rebuild'
 
 if [[ $npm_lifecycle_event == "prepublish" ]]; then
-	is_publish=`$NODE -e "console.log(JSON.parse(process.env.npm_config_argv).cooked.indexOf('publish') !== -1);"`
+	is_publish=`$NODE -e "console.log(JSON.parse('$npm_config_argv').cooked.indexOf('publish') !== -1);"`
 	if [[ $is_publish == "true" ]]; then
 		args="$args package publish"
 	else
 		exit 0
 	fi
-fi
-
-if [[ $NODE == "" ]]; then
-	NODE=`which node`
 fi
 
 for target in ${targets[@]}; do
