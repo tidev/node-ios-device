@@ -58,6 +58,7 @@ timestamps {
 
         stage('Publish') {
           if (!isPR) {
+            sh 'yarn install' // re-install dev dependencies
             sh 'npm publish' // This uploads the compiled binaries to s3 for us
             // Trigger appc-cli-wrapper job
             build job: 'appc-cli-wrapper', wait: false
