@@ -56,28 +56,10 @@ function download(abiVersion, cb) {
 	});
 }
 
-async.series([
-	function (cb) { download(11, cb); },
-	function (cb) { download(14, cb); },
-	function (cb) {
-		var done = false;
-		var ver = 42;
-		async.whilst(
-			function () { return !done; },
-			function (cb) {
-				if (ver === 49 || ver === 50) {
-					// there is no api version 49 or 50
-					return cb();
-				}
-
-				download(ver++, function (err) {
-					done = !!err;
-					cb();
-				});
-			},
-			cb
-		);
+async.each([11, 45, 46, 47, 48, 51], download, function(err) {
+	if (err) {
+		console.log('Failed to grab pre-built binary: ' + err);
+		process.exit(1);
 	}
-], function () {
 	console.log('Done!');
 });

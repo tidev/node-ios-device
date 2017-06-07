@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "iOS device library",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
@@ -43,7 +43,8 @@
     "prepublish": "./bin/build-all.sh",
     "rebuild": "node-pre-gyp rebuild",
     "rebuild-debug": "node-pre-gyp --debug rebuild",
-    "xcode": "node-pre-gyp configure -- -f xcode"
+    "xcode": "node-pre-gyp configure -- -f xcode",
+    "download-all": "./bin/download-all.js"
   },
   "binary": {
     "module_name": "node_ios_device",
