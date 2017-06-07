@@ -26,16 +26,16 @@
     "mobile"
   ],
   "dependencies": {
-    "debug": "^2.6.3",
-    "nan": "^2.5.1",
-    "node-pre-gyp": "^0.6.34",
+    "debug": "^2.6.8",
+    "nan": "^2.6.2",
+    "node-pre-gyp": "^0.6.36",
     "node-pre-gyp-init": "^1.0.0"
   },
   "bundledDependencies": [
     "node-pre-gyp"
   ],
   "devDependencies": {
-    "aws-sdk": "^2.36.0"
+    "aws-sdk": "^2.64.0"
   },
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
