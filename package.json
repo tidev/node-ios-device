@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "iOS device library",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
@@ -38,13 +38,13 @@
     "aws-sdk": "^2.64.0"
   },
   "scripts": {
-    "install": "node-pre-gyp install --fallback-to-build",
-    "build-n-publish-binding": "node-pre-gyp rebuild package publish",
-    "prepublish": "./bin/build-all.sh",
-    "rebuild": "node-pre-gyp rebuild",
-    "rebuild-debug": "node-pre-gyp --debug rebuild",
-    "xcode": "node-pre-gyp configure -- -f xcode",
-    "download-all": "./bin/download-all.js"
+    "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
+    "build-n-publish-binding": "node ./bin/run.js node-pre-gyp rebuild package publish",
+    "prepublish": "node ./bin/run.js node ./bin/build-all.js",
+    "rebuild": "node ./bin/run.js node-pre-gyp rebuild",
+    "rebuild-debug": "node ./bin/run.js node-pre-gyp --debug rebuild",
+    "xcode": "node ./bin/run.js node-pre-gyp configure -- -f xcode",
+    "download-all": "node ./bin/download-all.js"
   },
   "binary": {
     "module_name": "node_ios_device",
@@ -54,9 +54,6 @@
   },
   "license": "Apache-2.0",
   "gypfile": true,
-  "os": [
-    "darwin"
-  ],
   "main": "./ios-device",
   "engines": {
     "node": ">=0.10"
