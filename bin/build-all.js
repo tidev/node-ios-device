@@ -25,7 +25,6 @@ var actions = [ 'rebuild' ];
 
 if (process.env.npm_lifecycle_event === 'prepublish') {
 	var argv = JSON.parse(process.env.npm_config_argv);
-	console.log(argv);
 	var isPublish = argv.cooked.indexOf('publish') !== -1;
 	if (isPublish) {
 		actions.push('package', 'publish');
