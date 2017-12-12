@@ -15,7 +15,8 @@ const nodeModuleVersions = [
 	47, // 5.x
 	48, // 6.x
 	51, // 7.x
-	57  // 8.x
+	57, // 8.x
+	59  // 9.x
 ];
 
 const fs = require('fs');
