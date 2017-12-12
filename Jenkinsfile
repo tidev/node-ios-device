@@ -2,7 +2,7 @@
 library 'pipeline-library'
 
 timestamps {
-  node('osx && npm-publish && xcode-8.1') {
+  node('osx && npm-publish && xcode-9') {
     def packageVersion = ''
     def isMaster = false
 
@@ -21,7 +21,7 @@ timestamps {
       currentBuild.displayName = "#${packageVersion}-${currentBuild.number}"
     }
 
-    nodejs(nodeJSInstallationName: 'node 4.7.3') {
+    nodejs(nodeJSInstallationName: 'node 8.9.1') {
       ansiColor('xterm') {
         timeout(15) {
           stage('Build') {
