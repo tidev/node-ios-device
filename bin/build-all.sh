@@ -6,7 +6,7 @@ targets=(
 	# 1.0.4   # 42 UNSUPPORTED BY Xcode 8.3
 	# 1.8.4   # 43 UNSUPPORTED BY Xcode 8.3
 	# 2.5.0   # 44 UNSUPPORTED BY Xcode 8.3
-	3.3.1     # 45
+	# 3.3.1   # 45 UNSUPPROTED
 	4.8.7     # 46
 	5.12.0    # 47
 	6.12.2    # 48

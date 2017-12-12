@@ -14,8 +14,6 @@ node-ios-device is currently compatible with the following versions:
    * 7.x (module API v51)
    * 8.x (module API v57)
    * 9.x (module API v59)
- * io.js
-   * 3.x (module API v45)
 
 Only Mac OS X (darwin) is supported. You should make this module an optional
 dependency of your application and it will only be downloaded on OS X.
