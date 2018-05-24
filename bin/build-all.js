@@ -25,7 +25,7 @@ var path = require('path');
 var nodePreGyp = path.resolve(__dirname, '..', 'node_modules', 'node-pre-gyp', 'bin', 'node-pre-gyp');
 var actions = [ 'rebuild' ];
 
-if (process.env.npm_lifecycle_event === 'prepublish') {
+if (process.env.npm_lifecycle_event === 'prepare') {
 	var argv = JSON.parse(process.env.npm_config_argv);
 	var isPublish = argv.cooked.indexOf('publish') !== -1;
 	if (isPublish) {
