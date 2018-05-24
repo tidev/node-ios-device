@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "iOS device library",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
@@ -27,20 +27,20 @@
   ],
   "dependencies": {
     "debug": "^3.1.0",
-    "nan": "^2.8.0",
-    "node-pre-gyp": "^0.6.39",
-    "node-pre-gyp-init": "^1.0.0"
+    "nan": "^2.10.0",
+    "node-pre-gyp": "^0.10.0",
+    "node-pre-gyp-init": "^1.1.0"
   },
   "bundledDependencies": [
     "node-pre-gyp"
   ],
   "devDependencies": {
-    "aws-sdk": "^2.168.0"
+    "aws-sdk": "^2.245.1"
   },
   "scripts": {
     "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
     "build-n-publish-binding": "node ./bin/run.js node-pre-gyp rebuild package publish",
-    "prepublish": "node ./bin/run.js node ./bin/build-all.js",
+    "prepare": "node ./bin/run.js node ./bin/build-all.js",
     "rebuild": "node ./bin/run.js node-pre-gyp rebuild",
     "rebuild-debug": "node ./bin/run.js node-pre-gyp --debug rebuild",
     "xcode": "node ./bin/run.js node-pre-gyp configure -- -f xcode",

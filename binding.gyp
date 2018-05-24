@@ -1,4 +1,7 @@
 {
+	'variables': {
+		'build_v8_with_gn': 'false'
+	},
 	'conditions': [
 		['OS=="mac"', {
 			'targets': [
@@ -17,10 +20,10 @@
 					],
 					'libraries': [
 						'/System/Library/Frameworks/CoreFoundation.framework',
-						'/System/Library/PrivateFrameworks/MobileDevice.framework'
+						'MobileDevice.framework'
 					],
 					'mac_framework_dirs': [
-						'/System/Library/PrivateFrameworks'
+						'<(module_root_dir)/build'
 					],
 					'include_dirs': [
 						'<!(node -e "require(\'nan\')")'
@@ -39,16 +42,31 @@
 						'OTHER_LDFLAGS': [ '-stdlib=libc++' ],
 						'MACOSX_DEPLOYMENT_TARGET': '10.11',
 						'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'
-					}
-				},
-				{
-					'target_name': 'action_after_build',
-					'type': 'none',
-					'dependencies': [ '<(module_name)' ],
-					'copies': [
+					},
+					'actions': [
 						{
-							'files': [ '<(PRODUCT_DIR)/<(module_name).node' ],
-							'destination': '<(module_path)'
+							'action_name': 'copy_mobiledevice',
+							'inputs': [ '/System/Library/PrivateFrameworks/MobileDevice.framework' ],
+							'outputs': [ '<(module_root_dir)/build/MobileDevice.framework' ],
+							'action': [ 'cp', '-R', '<@(_inputs)', '<@(_outputs)' ]
+						}
+					],
+					'postbuilds': [
+						{
+							'postbuild_name': 'Create binding directory',
+							'action': [
+								'mkdir',
+								'-p',
+								'<(module_path)'
+							]
+						},
+						{
+							'postbuild_name': 'Copy binary into binding directory',
+							'action': [
+								'cp',
+								'<(PRODUCT_DIR)/<(module_name).node',
+								'<(module_path)/<(module_name).node'
+							]
 						}
 					]
 				}
