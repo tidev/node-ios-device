@@ -1,4 +1,7 @@
 {
+	'variables': {
+		'build_v8_with_gn': 'false'
+	},
 	'conditions': [
 		['OS=="mac"', {
 			'targets': [
