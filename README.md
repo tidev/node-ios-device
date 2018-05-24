@@ -14,6 +14,7 @@ node-ios-device is currently compatible with the following versions:
    * 7.x (module API v51)
    * 8.x (module API v57)
    * 9.x (module API v59)
+   * 10.x (module API v64)
 
 Only Mac OS X (darwin) is supported. You should make this module an optional
 dependency of your application and it will only be downloaded on OS X.
@@ -299,4 +300,4 @@ This project contains `mobiledevice.h` from
 [https://bitbucket.org/tristero/mobiledeviceaccess](https://bitbucket.org/tristero/mobiledeviceaccess)
 and is available under public domain.
 
-#### (C) Copyright 2012-2017, [Appcelerator](http://www.appcelerator.com/) Inc. All Rights Reserved.
+#### (C) Copyright 2012-2018, [Appcelerator](http://www.appcelerator.com/) Inc. All Rights Reserved.
