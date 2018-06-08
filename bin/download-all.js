@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 if (typeof Promise === 'undefined') {
 	console.log('This script requires Node.js 4 or newer!');
@@ -8,17 +9,7 @@ if (typeof Promise === 'undefined') {
 /**
  * List of supported Node.js module API versions.
  */
-const nodeModuleVersions = [
-	11, // 0.10.4 - 0.10.48
-	45, // 3.x
-	46, // 4.x
-	47, // 5.x
-	48, // 6.x
-	51, // 7.x
-	57, // 8.x
-	59, // 9.x
-	64  // 10.x
-];
+const nodeModuleVersions = Object.values(require('./versions.json'));
 
 const fs = require('fs');
 const https = require('https');

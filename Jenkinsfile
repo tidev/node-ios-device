@@ -30,7 +30,7 @@ timestamps {
               sh 'npm install -g yarn'
             }
             sh 'yarn install'
-            sh './bin/build-all.sh'
+            sh 'node ./bin/build-all'
             // no unit tests!
             fingerprint 'package.json'
             archiveArtifacts 'binding/**/*'
