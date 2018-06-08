@@ -6,11 +6,6 @@ if (typeof Promise === 'undefined') {
 	process.exit(1);
 }
 
-/**
- * List of supported Node.js module API versions.
- */
-const nodeModuleVersions = Object.values(require('./versions.json'));
-
 const fs = require('fs');
 const https = require('https');
 const path = require('path');
@@ -18,6 +13,10 @@ const exec = require('child_process').exec;
 const pkgJson = require(path.resolve(__dirname + '/../package.json'));
 const moduleName = pkgJson.binary.module_name;
 const version = pkgJson.version;
+/**
+ * List of supported Node.js module API versions.
+ */
+const nodeModuleVersions = Object.values(pkgJson.binary.targets);
 const bindingDir = path.dirname(path.resolve(__dirname + '/../' + pkgJson.binary.module_path));
 const prefix = pkgJson.binary.host + '/' + pkgJson.binary.remote_path
 	.replace(/^.\//, '')

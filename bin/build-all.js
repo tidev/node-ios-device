@@ -6,9 +6,9 @@ if (process.platform !== 'darwin') {
 	process.exit(0);
 }
 
-const targets = Object.keys(require('./versions.json'));
-
 const path = require('path');
+const pkgJson = require(path.resolve(__dirname + '/../package.json'));
+const targets = Object.keys(pkgJson.binary.targets);
 const nodePreGyp = path.resolve(__dirname, '..', 'node_modules', 'node-pre-gyp', 'bin', 'node-pre-gyp');
 const actions = [ 'rebuild' ];
 
