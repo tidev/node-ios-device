@@ -58,12 +58,12 @@ timestamps {
         } // stage
 
         stage('Publish') {
-		  // only publish master and trigger downstream
+          // only publish master and trigger downstream
           if (isMaster) {
             sh 'yarn install' // re-install dev dependencies
             sh 'npm publish' // This uploads the compiled binaries to s3 for us
-            // Trigger appc-cli-wrapper job
-            build job: 'appc-cli-wrapper', wait: false
+            // Trigger appc-cli job
+            build job: "../appc-cli/${env.BRANCH_NAME}", wait: false
           }
         } // stage
 
