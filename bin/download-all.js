@@ -1,24 +1,10 @@
 #!/usr/bin/env node
+'use strict';
 
 if (typeof Promise === 'undefined') {
 	console.log('This script requires Node.js 4 or newer!');
 	process.exit(1);
 }
-
-/**
- * List of supported Node.js module API versions.
- */
-const nodeModuleVersions = [
-	11, // 0.10.4 - 0.10.48
-	45, // 3.x
-	46, // 4.x
-	47, // 5.x
-	48, // 6.x
-	51, // 7.x
-	57, // 8.x
-	59, // 9.x
-	64  // 10.x
-];
 
 const fs = require('fs');
 const https = require('https');
@@ -27,6 +13,10 @@ const exec = require('child_process').exec;
 const pkgJson = require(path.resolve(__dirname + '/../package.json'));
 const moduleName = pkgJson.binary.module_name;
 const version = pkgJson.version;
+/**
+ * List of supported Node.js module API versions.
+ */
+const nodeModuleVersions = Object.values(pkgJson.binary.targets);
 const bindingDir = path.dirname(path.resolve(__dirname + '/../' + pkgJson.binary.module_path));
 const prefix = pkgJson.binary.host + '/' + pkgJson.binary.remote_path
 	.replace(/^.\//, '')
