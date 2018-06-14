@@ -1,4 +1,4 @@
-# node-ios-device [![Build Status](https://travis-ci.org/appcelerator/node-ios-device.svg?branch=master)](https://travis-ci.org/appcelerator/node-ios-device)
+# node-ios-device [![Build Status](https://travis-ci.org/appcelerator/node-ios-device.svg?branch=master)](https://travis-ci.org/appcelerator/node-ios-device) [![Greenkeeper badge](https://badges.greenkeeper.io/appcelerator/node-ios-device.svg)](https://greenkeeper.io/)
 
 Queries connected iOS devices, installs apps, and relays log output.
 
