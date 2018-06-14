@@ -46,7 +46,8 @@
     "rebuild": "node ./bin/run.js node-pre-gyp rebuild",
     "rebuild-debug": "node ./bin/run.js node-pre-gyp --debug rebuild",
     "xcode": "node ./bin/run.js node-pre-gyp configure -- -f xcode",
-    "download-all": "node ./bin/download-all.js"
+    "download-all": "node ./bin/download-all.js",
+    "test": "exit 0"
   },
   "binary": {
     "module_name": "node_ios_device",
