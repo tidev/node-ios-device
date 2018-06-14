@@ -1,5 +1,5 @@
 #! groovy
-library 'pipeline-librarye'
+library 'pipeline-library'
 
 buildNPMPackage {
   labels = 'osx && git && npm-publish && xcode-9'
