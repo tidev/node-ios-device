@@ -28,7 +28,7 @@
     "devices"
   ],
   "dependencies": {
-    "debug": "^3.1.0",
+    "debug": "^4.0.0",
     "nan": "^2.10.0",
     "node-pre-gyp": "^0.10.0",
     "node-pre-gyp-init": "^1.1.0"
