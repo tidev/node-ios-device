@@ -28,16 +28,16 @@
     "devices"
   ],
   "dependencies": {
-    "debug": "^3.1.0",
-    "nan": "^2.10.0",
-    "node-pre-gyp": "^0.10.0",
+    "debug": "^4.1.0",
+    "nan": "^2.11.1",
+    "node-pre-gyp": "^0.12.0",
     "node-pre-gyp-init": "^1.1.0"
   },
   "bundledDependencies": [
     "node-pre-gyp"
   ],
   "devDependencies": {
-    "aws-sdk": "^2.245.1"
+    "aws-sdk": "^2.366.0"
   },
   "scripts": {
     "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
@@ -60,9 +60,10 @@
       "5.12.0": 47,
       "6.14.2": 48,
       "7.10.1": 51,
-      "8.11.2": 57,
-      "9.11.1": 59,
-      "10.2.1": 64
+      "8.14.0": 57,
+      "9.11.2": 59,
+      "10.14.0": 64,
+      "11.3.0": 67
     }
   },
   "license": "Apache-2.0",
