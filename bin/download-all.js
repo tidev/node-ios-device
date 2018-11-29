@@ -13,6 +13,7 @@ const exec = require('child_process').exec;
 const pkgJson = require(path.resolve(__dirname + '/../package.json'));
 const moduleName = pkgJson.binary.module_name;
 const version = pkgJson.version;
+
 /**
  * List of supported Node.js module API versions.
  */
