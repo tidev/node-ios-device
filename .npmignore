@@ -11,3 +11,4 @@ binding
 npm-debug.log*
 env.properties
 /Jenkinsfile
+yarn.lock
