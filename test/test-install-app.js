@@ -15,7 +15,8 @@ iosDevice.devices(function (err, devices) {
 
 	var udid = devices[0].udid;
 
-	var stopLog = iosDevice.log(udid, function (msg) {
+	var handle = iosDevice.log(udid);
+	handle.on('log', function (msg) {
 		console.log(msg);
 	});
 
@@ -27,7 +28,7 @@ iosDevice.devices(function (err, devices) {
 		if (err) {
 			console.error('ERROR!!!');
 			console.error(err);
-			stopLog();
+			handle.stop();
 			process.exit(1);
 		} else {
 			console.log('=====================================================');
