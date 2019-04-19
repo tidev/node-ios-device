@@ -4,7 +4,7 @@
  * @module ios-device
  *
  * @copyright
- * Copyright (c) 2012-2016 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2012-2019 by Appcelerator, Inc. All Rights Reserved.
  *
  * @license
  * Licensed under the terms of the Apache Public License
@@ -13,146 +13,101 @@
 
 'use strict';
 
-var debug = require('debug')('node-ios-device');
-var EventEmitter = require('events').EventEmitter;
-var fs = require('fs');
-var init = require('node-pre-gyp-init');
-var path = require('path');
-var util = require('util');
+const fs = require('fs');
+const init = require('node-pre-gyp-init');
+const path = require('path');
 
-var binding;
-var activeCalls = 0;
-var emitter = new EventEmitter;
+const snooplogg = require('snooplogg').default;
+const logger = snooplogg('node-ios-device');
+const { highlight } = snooplogg.styles;
+const { EventEmitter } = require('events');
 
-emitter.on('debug', debug);
+let binding;
+let activeCalls = 0;
+const emitter = new EventEmitter();
 
-module.exports.devices = devices;
-module.exports.trackDevices = trackDevices;
-module.exports.installApp = installApp;
-module.exports.log = log;
+const deviceColors = {
+	'0': 'White',
+	'1': 'Black',
+	'2': 'Silver',
+	'3': 'Gold',
+	'4': 'Rose Gold',
+	'5': 'Jet Black'
+};
+
+emitter.on('debug', logger.log);
+
+exports.devices = devices;
+exports.trackDevices = trackDevices;
+exports.installApp = installApp;
+exports.log = log;
 
 /**
  * Exposes both an event emitter API and a `stop()` method for canceling long
  * running functions such as `trackDevices()` and `log()`.
  */
-function Handle() {}
-util.inherits(Handle, EventEmitter);
-Handle.prototype.stop = function stop() {
-	// meant to be overwritten
-};
-
-/**
- * Internal helper function that initializes the node-ios-device binding.
- *
- * @param {Function} callback - A function to call after node-ios-device has
- * been loaded and initialized.
- */
-function initBinding(callback) {
-	if (process.platform !== 'darwin') {
-		return setImmediate(function () {
-			callback(new Error(process.platform + ' not supported'));
-		});
+class Handle extends EventEmitter {
+	stop() {
+		// meant to be overwritten
 	}
-
-	if (binding) {
-		return setImmediate(callback);
-	}
-
-	debug('Initializing binding');
-
-	init(path.resolve(__dirname, './package.json'), function (err, bindingPath) {
-		if (err) {
-			return callback(err);
-		}
-
-		debug('Loading binding: ' + bindingPath);
-		binding = require(bindingPath);
-
-		debug('Initializing node-ios-device and setting emitter');
-		binding.initialize(emitter);
-
-		callback();
-	});
 }
 
 /**
  * Retrieves an array of all connected iOS devices.
  *
- * @param {Function} callback(err, devices) - A function to call with the connected devices.
+ * @returns {Promise} Resolves the list of connected devices.
  */
-function devices(callback) {
-	initBinding(function (err) {
-		if (err) {
-			return callback(err);
-		}
+async function devices(callback) {
+	await initBinding();
 
-		debug('Calling binding.devices()');
-		activeCalls++;
+	logger.log('Calling binding.devices()');
+	activeCalls++;
 
-		binding.devices(function (err, devices) {
-			callback(err, devices);
+	return await new Promise((resolve, reject) => {
+		binding.devices((err, devices) => {
 			if (--activeCalls === 0) {
 				binding.suspend();
+			}
+			if (err) {
+				reject(err);
+			} else {
+				resolve(processDevices(devices));
 			}
 		});
 	});
 }
 
 /**
- * Continuously retrieves an array of all connected iOS devices. Whenever a
- * device is connected or disconnected, the specified callback is fired.
+ * Internal helper function that initializes the node-ios-device binding.
  *
- * @returns {Handle} A handle that emits a `log` event and `stop()` method.
+ * @returns {Promise}
  */
-function trackDevices() {
-	var handle = new Handle;
-	var running = false;
-	var onDevicesChanged = function () {
-		if (running) {
-			debug('Devices changed, calling callback');
-			binding.devices(function (err, devices) {
-				if (err) {
-					handle.stop();
-					handle.emit('error', err);
-				} else {
-					handle.emit('devices', devices);
-				}
-			});
-		}
-	};
+async function initBinding() {
+	if (process.platform !== 'darwin') {
+		throw new Error(`${process.platform} not supported`);
+	}
 
-	handle.stop = function stop() {
-		if (running) {
-			running = false;
-			emitter.removeListener('devicesChanged', onDevicesChanged);
-			if (--activeCalls === 0) {
-				binding.suspend();
-			}
-		}
-	};
+	if (binding) {
+		return;
+	}
 
-	initBinding(function (err) {
-		if (err) {
-			return handle.emit('error', err);
-		}
+	logger.log('Initializing binding');
 
-		activeCalls++;
-		running = true;
-
-		binding.devices(function (err, devices) {
+	await new Promise((resolve, reject) => {
+		init(path.resolve(__dirname, './package.json'), function (err, bindingPath) {
 			if (err) {
-				handle.stop();
-				handle.emit('error', err);
-			} else {
-				handle.emit('devices', devices);
+				return reject(err);
 			}
+
+			logger.log(`Loading binding: ${highlight(bindingPath)}`);
+			binding = require(bindingPath);
+
+			logger.log('Initializing node-ios-device and setting emitter');
+			binding.initialize(emitter);
+
+			resolve();
 		});
-
-		emitter.on('devicesChanged', onDevicesChanged);
-		binding.resume();
 	});
-
-	return handle;
 }
 
 /**
@@ -160,43 +115,31 @@ function trackDevices() {
  *
  * @param {String} udid - The device udid to install the app to.
  * @param {String} appPath - The path to iOS .app directory to install.
- * @param {Function} callback(err) - A function to call when the install finishes.
+ * @returns {Promise}
  */
-function installApp(udid, appPath, callback) {
-	initBinding(function (err) {
-		if (err) {
-			return callback(err);
+async function installApp(udid, appPath) {
+	await initBinding();
+
+	appPath = path.resolve(appPath);
+
+	try {
+		if (!fs.statSync(path.join(appPath, 'PkgInfo')).isFile()) {
+			throw new Error('Specified .app path is not a valid app');
 		}
+	} catch (e) {
+		return callback(new Error('Specified .app path does not exist'));
+	}
 
-		appPath = path.resolve(appPath);
+	activeCalls++;
+	binding.resume();
 
-		try {
-			if (!fs.statSync(appPath).isDirectory()) {
-				return callback(new Error('Specified .app path is not a valid app'));
+	await new Promise(resolve => {
+		binding.installApp(udid, appPath, () => {
+			resolve();
+			if (--activeCalls === 0) {
+				binding.suspend();
 			}
-		} catch (e) {
-			return callback(new Error('Specified .app path does not exist'));
-		}
-
-		try {
-			fs.statSync(path.join(appPath, 'PkgInfo'));
-		} catch (e) {
-			return callback(new Error('Specified .app path is not a valid app'));
-		}
-
-		activeCalls++;
-		binding.resume();
-
-		try {
-			binding.installApp(udid, appPath, function (err) {
-				callback(err);
-				if (--activeCalls === 0) {
-					binding.suspend();
-				}
-			});
-		} catch (e) {
-			return callback(e);
- 		}
+		});
 	});
 }
 
@@ -213,16 +156,14 @@ function log(udid, port) {
 		throw new Error('Port must be a number between 1 and 65535');
 	}
 
-	var handle = new Handle;
-	var running = false;
-	var evtName = (port ? 'LOG_PORT_' + port + '_' : 'SYSLOG_') + udid;
-	var emitFn = function (msg) {
-		handle.emit('log', msg);
-	};
+	const handle = new Handle();
+	let running = false;
+	const evtName = port ? `LOG_PORT_${port}_${udid}` : `SYSLOG_${udid}`;
+	const emitFn = msg => handle.emit('log', msg);
 	emitter.on(evtName, emitFn);
-	var timer = null;
+	let timer = null;
 
-	function tryStartLogRelay() {
+	const tryStartLogRelay = () => {
 		try {
 			binding.startLogRelay(udid, port);
 			running = true;
@@ -232,37 +173,37 @@ function log(udid, port) {
 		}
 	};
 
-	emitter.on('app-quit', function (_port) {
+	emitter.on('app-quit', _port => {
 		if (~~_port === port) {
 			handle.emit('app-quit');
 			setImmediate(tryStartLogRelay);
 		}
 	});
 
-	var trackHandle = trackDevices()
-		.on('devices', function (devices) {
-			debug('Connected devices: ' + devices.map(function (dev) { return dev.udid; }).join(', '));
+	const trackHandle = trackDevices()
+		.on('devices', devices => {
 			clearTimeout(timer);
-			if (devices.some(function (dev) { return dev.udid === udid; })) {
+			logger.log(`Connected devices: ${devices.map(dev => dev.udid).join(', ')}`);
+			if (devices.some(dev => dev.udid === udid)) {
 				tryStartLogRelay();
 			} else if (running) {
 				// device was disconnected
-				debug('Device was disconnected');
+				logger.log('Device was disconnected');
 				handle.emit('disconnect');
 			} else {
 				// device was never connected
 				handle.stop();
-				handle.emit('error', new Error('Device \'' + udid + '\' not connected'));
+				handle.emit('error', new Error(`Device '${udid}' not connected`));
 			}
 		})
-		.on('error', function (err) {
+		.on('error', err => {
 			handle.stop();
 			handle.emit('error', err);
 		});
 
-	handle.stop = function stop() {
-		running = false;
+	handle.stop = () => {
 		clearTimeout(timer);
+		running = false;
 		emitter.removeListener(evtName, emitFn);
 
 		if (!emitter._events[evtName] || emitter._events[evtName].length <= 0) {
@@ -273,12 +214,84 @@ function log(udid, port) {
 				// has been disconnected
 				binding.stopLogRelay(udid, port);
 			} catch (e) {
-				// squeltch
+				// squelch
 			}
 		}
 
 		trackHandle.stop();
 	};
+
+	return handle;
+}
+
+/**
+ * Fixes the device color.
+ *
+ * @param {Array.<Object>} devices - A list of devices.
+ * @returns {Array.<Object>} The original list of devices.
+ */
+function processDevices(devices) {
+	for (const device of devices) {
+		const color = deviceColors[device.deviceColor];
+		if (color) {
+			device.deviceColor = color;
+		} else {
+			device.deviceColor = device.deviceColor.substring(0, 1).toUpperCase() + device.deviceColor.substring(1);
+		}
+	}
+	return devices;
+}
+
+/**
+ * Continuously retrieves an array of all connected iOS devices. Whenever a
+ * device is connected or disconnected, the specified callback is fired.
+ *
+ * @returns {Handle} A handle that emits a `log` event and `stop()` method.
+ */
+function trackDevices() {
+	const handle = new Handle();
+	let running = false;
+	const onDevicesChanged = suppressLog => {
+		if (running) {
+			if (!suppressLog) {
+				logger.log('Devices changed, calling callback');
+			}
+			binding.devices((err, devices) => {
+				if (err) {
+					handle.stop();
+					handle.emit('error', err);
+				} else {
+					handle.emit('devices', processDevices(devices));
+				}
+			});
+		}
+	};
+
+	handle.stop = () => {
+		if (running) {
+			running = false;
+			emitter.removeListener('devicesChanged', onDevicesChanged);
+			if (--activeCalls === 0) {
+				binding.suspend();
+			}
+		}
+	};
+
+	setImmediate(async () => {
+		try {
+			await initBinding();
+		} catch (err) {
+			return handle.emit('error', err);
+		}
+
+		activeCalls++;
+		running = true;
+
+		onDevicesChanged(true);
+
+		emitter.on('devicesChanged', onDevicesChanged);
+		binding.resume();
+	});
 
 	return handle;
 }

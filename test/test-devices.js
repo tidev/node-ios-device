@@ -1,9 +1,11 @@
-var iosDevice = require('../ios-device');
+const iosDevice = require('../ios-device');
 
-iosDevice.devices(function (err, devices) {
-	if (err) {
+(async () => {
+	try {
+		const devices = await iosDevice.devices();
+		console.log(devices);
+	} catch (err) {
 		console.error(err.toString());
 		process.exit(1);
 	}
-	console.log(devices);
-});
+})();

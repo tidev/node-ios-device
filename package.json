@@ -1,21 +1,13 @@
 {
   "name": "node-ios-device",
-  "description": "Simple library for listing and installing apps on iOS devices",
-  "version": "1.6.3",
-  "author": {
-    "name": "Appcelerator, Inc.",
-    "email": "info@appcelerator.com"
-  },
+  "version": "2.0.0",
+  "description": "Simple library for detecting and installing apps on iOS devices",
+  "main": "./ios-device",
+  "author": "Axway, Inc. <npmjs@appcelerator.com>",
   "maintainers": [
-    {
-      "name": "Chris Barber",
-      "email": "cbarber@appcelerator.com"
-    }
+    "Chris Barber <cbarber@axway.com>"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/appcelerator/node-ios-device.git"
-  },
+  "license": "Apache-2.0",
   "keywords": [
     "appcelerator",
     "ios",
@@ -27,18 +19,6 @@
     "device",
     "devices"
   ],
-  "dependencies": {
-    "debug": "^4.1.0",
-    "nan": "^2.11.1",
-    "node-pre-gyp": "^0.12.0",
-    "node-pre-gyp-init": "^1.1.0"
-  },
-  "bundledDependencies": [
-    "node-pre-gyp"
-  ],
-  "devDependencies": {
-    "aws-sdk": "^2.366.0"
-  },
   "scripts": {
     "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
     "build-n-publish-binding": "node ./bin/run.js node-pre-gyp rebuild package publish",
@@ -49,27 +29,35 @@
     "download-all": "node ./bin/download-all.js",
     "test": "exit 0"
   },
+  "dependencies": {
+    "nan": "^2.13.2",
+    "node-pre-gyp": "^0.12.0",
+    "node-pre-gyp-init": "^1.1.0",
+    "snooplogg": "^2.0.1"
+  },
+  "bundledDependencies": [
+    "node-pre-gyp"
+  ],
+  "devDependencies": {
+    "aws-sdk": "^2.441.0"
+  },
+  "homepage": "https://github.com/appcelerator/node-ios-device",
+  "bugs": "https://github.com/appcelerator/node-ios-device/issues",
+  "repository": "https://github.com/appcelerator/node-ios-device",
   "binary": {
     "module_name": "node_ios_device",
     "module_path": "./binding/{node_abi}-{platform}-{arch}/",
     "remote_path": "./{name}/v{version}",
     "host": "https://appc-node-binaries.s3.amazonaws.com",
     "targets": {
-      "0.10.48": 11,
-      "4.9.1": 46,
-      "5.12.0": 47,
-      "6.14.2": 48,
-      "7.10.1": 51,
-      "8.14.0": 57,
+      "8.16.0": 57,
       "9.11.2": 59,
-      "10.14.0": 64,
-      "11.3.0": 67
+      "10.15.3": 64,
+      "11.14.0": 67
     }
   },
-  "license": "Apache-2.0",
   "gypfile": true,
-  "main": "./ios-device",
   "engines": {
-    "node": ">=0.10"
+    "node": ">=8.0.0"
   }
 }
