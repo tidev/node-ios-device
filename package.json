@@ -2,7 +2,8 @@
   "name": "node-ios-device",
   "version": "2.0.0",
   "description": "Simple library for detecting and installing apps on iOS devices",
-  "main": "./ios-device",
+  "main": "./src/index",
+  "gypfile": true,
   "author": "Axway, Inc. <npmjs@appcelerator.com>",
   "maintainers": [
     "Chris Barber <cbarber@axway.com>"
@@ -20,44 +21,32 @@
     "devices"
   ],
   "scripts": {
-    "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
-    "build-n-publish-binding": "node ./bin/run.js node-pre-gyp rebuild package publish",
-    "prepare": "node ./bin/run.js node ./bin/build-all.js",
-    "rebuild": "node ./bin/run.js node-pre-gyp rebuild",
-    "rebuild-debug": "node ./bin/run.js node-pre-gyp --debug rebuild",
-    "xcode": "node ./bin/run.js node-pre-gyp configure -- -f xcode",
-    "download-all": "node ./bin/download-all.js",
-    "test": "exit 0"
+    "install": "node -e \"process.platform === 'darwin' && require('node-gyp-build/bin.js')\"",
+    "prepublishOnly": "npm run prebuild && npm run prebuild-ia32",
+    "prebuild": "prebuildify --napi=true --strip",
+    "prebuild-ia32": "prebuildify --napi=true --strip --arch=ia32",
+    "build": "node-gyp -j 16 build",
+    "build-debug": "node-gyp -j 16 build --debug",
+    "clean": "node-gyp clean",
+    "rebuild": "node-gyp -j 16 rebuild",
+    "rebuild-debug": "node-gyp -j 16 rebuild --debug",
+    "test": "mocha -r chai test/**/test-*.js"
   },
   "dependencies": {
-    "nan": "^2.13.2",
-    "node-pre-gyp": "^0.12.0",
-    "node-pre-gyp-init": "^1.1.0",
+    "cli-kit": "^0.11.0",
+    "napi-macros": "^1.8.2",
+    "node-gyp-build": "^4.1.0",
     "snooplogg": "^2.0.1"
   },
-  "bundledDependencies": [
-    "node-pre-gyp"
-  ],
   "devDependencies": {
-    "aws-sdk": "^2.441.0"
+    "chai": "^4.2.0",
+    "mocha": "^6.1.4",
+    "prebuildify": "^3.0.0"
   },
   "homepage": "https://github.com/appcelerator/node-ios-device",
   "bugs": "https://github.com/appcelerator/node-ios-device/issues",
   "repository": "https://github.com/appcelerator/node-ios-device",
-  "binary": {
-    "module_name": "node_ios_device",
-    "module_path": "./binding/{node_abi}-{platform}-{arch}/",
-    "remote_path": "./{name}/v{version}",
-    "host": "https://appc-node-binaries.s3.amazonaws.com",
-    "targets": {
-      "8.16.0": 57,
-      "9.11.2": 59,
-      "10.15.3": 64,
-      "11.14.0": 67
-    }
-  },
-  "gypfile": true,
   "engines": {
-    "node": ">=8.0.0"
+    "node": "^8.12.0 || >=10.2.0"
   }
 }

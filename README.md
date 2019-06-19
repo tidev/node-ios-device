@@ -1,86 +1,87 @@
-# node-ios-device [![Build Status](https://travis-ci.org/appcelerator/node-ios-device.svg?branch=master)](https://travis-ci.org/appcelerator/node-ios-device) [![Greenkeeper badge](https://badges.greenkeeper.io/appcelerator/node-ios-device.svg)](https://greenkeeper.io/)
+TODO
+
+- add forward, syslog, track, and install tests
+- add comments to code
+
+
+
+
+# node-ios-device [![Build Status][3]][4] [![Greenkeeper badge][5]][6]
 
 Queries connected iOS devices, installs apps, and relays log output.
 
 ## Prerequisites
 
-node-ios-device is currently compatible with the following versions:
+`node-ios-device` only works on macOS and is currently compatible with the following versions:
 
  * Node.js
-   * 8.x (module API v57)
-   * 9.x (module API v59)
-   * 10.x (module API v64)
-   * 11.x (module API v67)
-   * 12.x (module API v68)
-
-Only Mac OS X (darwin) is supported. You should make this module an optional dependency of your
-application and it will only be downloaded on OS X.
+   * v8.12.x or newer
+   * v10.2.0 or newer
 
 ## Installation
 
-	npm install node-ios-device --save-optional
+    npm install node-ios-device
+
+## CLI
+
+```
+$ node-ios-device
+
+USAGE: node-ios-device <command> [options]
+
+COMMANDS:
+  forward  Connects to a port on an device and relays messages
+  install  Install an app on the specified device
+  list     Lists connected devices
+  syslog   Outputs a devices syslog messages
+  watch    Listens for devices to be connected/disconnected
+
+GLOBAL OPTIONS:
+  --no-color    Disable colors
+  -h,--help     Displays the help screen
+  -v,--version  Outputs the version
+```
 
 ## Example
 
-```javascript
-const iosDevice = require('node-ios-device');
+```js
+import iosDevice from 'node-ios-device';
 
 // get all connected iOS devices
-try {
-	const devices = await iosDevice.devices();
-	console.log('Connected devices:');
-	console.log(devices);
-} catch (err) {
-	console.error('Error!', err);
-}
+const devices = iosDevice.list();
+console.log('Connected devices:', devices);
 
 // continuously watch for devices to be connected or disconnected
-iosDevice
-	.trackDevices()
-	.on('devices', devices => {
-		console.log('Connected devices:');
-		console.log(devices);
-	})
-	.on('error', err => {
-		console.error('Error!', err);
-	});
+const handle = iosDevice.watch();
+handle.on('change', devices => {
+    console.log('Connected devices:', devices);
+});
+handle.on('error', console.error);
 
 // install an iOS app
-try {
-	await iosDevice.installApp('<device udid>', '/path/to/my.app');
-	console.log('Success!');
-} catch (err) {
-	console.error('Error!', err);
-}
+iosDevice.install('<device udid>', '/path/to/my.app');
+console.log('Success!');
 
 // relay the syslog output to the console
 iosDevice
-	.log('<device udid>')
-	.on('log', msg => {
-		console.log(msg);
-	})
-	.on('error', err => {
-		console.error('Error!', err);
-	});
+    .syslog('<device udid>')
+    .on('data', console.log)
+    .on('end', () => console.log('Device disconnected'));
 
 // relay output from a TCP port created by an iOS app
 iosDevice
-	.log('<device udid>', 1337)
-	.on('log', msg => {
-		console.log(msg);
-	})
-	.on('error', err => {
-		console.error('Error!', err);
-	});
+    .forward('<device udid>', 1337)
+    .on('data', console.log)
+    .on('end', () => console.log('Device disconnected'));
 ```
 
 ## API
 
-### devices()
+### `list()`
 
 Retrieves an array of all connected iOS devices.
 
-Returns a `Promise` that resolves an array of device objects.
+Returns an `Array` of device objects.
 
 Note that only devices connected via a USB cable will be returned. Devices connected via Wi-Fi will
 not be returned. The main reason we do this is because you can only relay the syslog from USB
@@ -103,41 +104,33 @@ Device objects contain the following information:
 There is more data that could have been retrieved from the device, but the properties above seemed
 the most reasonable.
 
-### trackDevices()
+### `watch()`
 
 Continuously retrieves an array of all connected iOS devices. Whenever a device is connected or
-disconnected, the `devices` event is emitted.
+disconnected, the `'change'` event is emitted.
 
 Returns an `EventEmitter`-based `Handle` instance that contains a `stop()` method to discontinue
 tracking devices.
 
-#### Event: 'devices'
+#### Event: `'change'`
 
 Emitted when a device is connected or disconnected.
 
 - `{Array<Object>} devices` - An array of devices
 
-#### Event: 'error'
-
-Emitted if there was an error such as platform is unsupported, failed to load or compile a
-compatible `node-ios-device` binary, or failed to detect devices.
-
-- `{Error} err` - The error
-
 #### Example:
 
-```javascript
-const handle = iosDevice
-	.trackDevices()
-	.on('devices', console.log);
+```js
+const handle = iosDevice.watch()
+    .on('change', console.log);
 
 setTimeout(() => {
-	// turn off tracking after 1 minute
-	handle.stop();
+    // turn off tracking after 1 minute
+    handle.stop();
 }, 60000);
 ```
 
-### installApp(udid, appPath)
+### `install(udid, appPath)`
 
 Installs an iOS app on the specified device.
 
@@ -148,61 +141,34 @@ Currently, an `appPath` that begins with `~` is not supported.
 
 The `appPath` must resolve to an iOS .app, not the .ipa file.
 
-Returns a `Promise`.
+### `syslog(udid)`
 
-### log(udid [, port])
+Relays the syslog from the iOS device.
 
-Relays a log from the iOS device. There are two modes. If you do not specify a port, it will relay
-the device's syslog and you'll need to parse out any app specific output yourself. If you specify a
-port, then it will connect to that port and relay all messages.
-
-Starting with iOS 10, relaying the syslog is virtually useless. iOS 10 has a new logging system
-that skips the syslog. You can get log output using the `log` command introduced in macOS Sierra,
-but it's not available for OS X El Capitan users. Because of this, `node-ios-device` added the
-ability to specify a port, but then your iOS app must contain a TCP server that accepts connects
-and outputs log messages to the `node-ios-device` log.
+Starting with iOS 10, the syslog no longer contains application specific output. If you want output
+for a specific app, then you will need to use a TCP socket. See [`forward()`](#forward) for more info.
 
 * `{String} udid` - The device udid
-* `{String} port` (optional) - The TCP port listening in the iOS app to connect to
 
-Returns a `Handle` instance that contains a `stop()` method to discontinue
-emitting messages.
+Returns a `Handle` instance that contains a `stop()` method to discontinue emitting messages.
 
-#### Event: 'log'
+#### Event: `'data'`
 
 Emitted for each line of output. Empty lines are omitted.
 
 - `{String} message` - The log message.
 
-#### Event: 'app-started'
+#### Event: 'end'
 
-Emitted when `node-ios-device` is able to successfully connect to the specified port on the device.
-This is only supported when specifying a port.
-
-#### Event: 'app-quit'
-
-Emitted when the app is quit. This is only supported when specifying a port.
-
-#### Event: 'disconnect'
-
-Emitted when the device is physically disconnected. Note that this does not stop the log relaying.
-You must manually call `handle.stop()`.
-
-#### Event: 'error'
-
-Emitted if there was an error such as if the device is not initially connected, platform is
-unsupported, failed to load or compile a compatible `node-ios-device` binary, or failed to detect
-devices.
-
-- `{Error} err` - The error
+Emitted when the device is physically disconnected. Note that this does not unregister the internal
+callback. You must manually call `handle.stop()` to cleanup.
 
 #### Example:
 
-```javascript
+```js
 const handle = iosDevice
-	.log('<device udid>')
-	.on('log', console.log);
-});
+	.syslog('<device udid>')
+	.on('data', console.log);
 
 setTimeout(function () {
 	// turn off logging after 1 minute
@@ -210,69 +176,65 @@ setTimeout(function () {
 }, 60000);
 ```
 
-When calling `log()` without a port to relay the syslog, it will print out several older messages.
-If you are only interested in new messages, then you'll have to debounce the messages using
-something like `_.debounce()` or use a timer and a ready flag like this:
+### `forward(udid, port)`
 
-```javascript
-let ready = false;
-let timer = null;
+Relays messages from a server running on the device on the specified port.
 
-iosDevice
-	.log('<device udid>')
-	.on('log', msg => {
-		if (ready) {
-			console.log(msg);
-		} else {
-			clearTimeout(timer);
-			timer = setTimeout(() => {
-				ready = true;
-			}, 500);
-		}
-	});
+* `{String} udid` - The device udid
+* `{String} port` - The TCP port listening in the iOS app to connect to
+
+Returns a `Handle` instance that contains a `stop()` method to discontinue
+emitting messages.
+
+#### Event: `'data'`
+
+Emitted for each line of output. Empty lines are omitted.
+
+- `{String} message` - The log message.
+
+#### Event: 'end'
+
+Emitted when the device is physically disconnected. Note that this does not unregister the internal
+callback. You must manually call `handle.stop()` to cleanup.
+
+#### Example:
+
+```js
+const handle = iosDevice
+	.forward('<device udid>', 1337)
+	.on('log', console.log);
+
+setTimeout(function () {
+	// turn off logging after 1 minute
+	handle.stop();
+}, 60000);
 ```
 
-## Maintainer Info
+## Advanced
 
-### Development
+### Debug Logging
 
-To manually build `node-ios-device`, simply run:
+`node-ios-device` exposes an event emitter that emits debug log messages. This is intended to help
+debug issues under the hood. The average user will never need to use this, however it would be
+handy when filing a bug.
 
-    npm run rebuild
+```js
+iosDevice.on('log', msg => console.log(msg));
+```
 
-To build it for all versions of Node.js, run:
+Alternatively, `node-ios-device` uses the amazing [`snooplogg`][2] debug logger where you simply
+set the `SNOOPLOGG` environment variable to `node-ios-device` (or `*`) and it will print the debug
+log to stdout.
 
-    bin/build-all.sh
-
-To debug `node-ios-device`,
-
- * Run `npm run xcode` to generate the Xcode project
- * Open the Xcode project from the `build` directory
- * Edit the scheme
- * From the "Run (debug)" menu, select the "Info" tab on the right
- * Click on the "Executable" dropdown and select "Other..."
- * Locate the Node.js executable (probably `/usr/local/bin/node`)
- * Change to the "Arguments" tab
- * Set the "Arguments Passed On Launch" to the JS file you want to run
-   - This will likely be one of the test cases
-   - Use an absolute path since all paths are relative to the Node executable
- * Add the environment variable `SNOOPLOGG=*`
- * Close out the schemes and click "Run"
-
-### Publishing
-
-This section is intended for Axway/Appcelerator release managers.
-
-To publish a new release to NPM, run `npm publish`. This will build `node-ios-device` for all
-Node.js module API versions and then upload each binary to an Axway/Appcelerator Amazon S3 bucket.
-You must make sure you have a `~/.node_pre_gyprc` containing:
-
-	{ "accessKeyId": "", "secretAccessKey": "" }
-
-## Legal
+## License
 
 This project is open source under the [Apache Public License v2][1] and is developed by
 [Axway, Inc](http://www.axway.com/) and the community. Please read the [`LICENSE`][1] file included
 in this distribution for more information.
 
 [1]: https://github.com/appcelerator/node-ios-device/blob/master/LICENSE
+[2]: https://www.npmjs.com/package/snooplogg
+[3]: https://travis-ci.org/appcelerator/node-ios-device.svg?branch=master
+[4]: https://travis-ci.org/appcelerator/node-ios-device
+[5]: https://badges.greenkeeper.io/appcelerator/node-ios-device.svg
+[6]: https://greenkeeper.io/

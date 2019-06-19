@@ -1,98 +1,42 @@
-/**
- * node-ios-device
- * Copyright (c) 2013-2016 by Appcelerator, Inc. All Rights Reserved.
- * Licensed under the terms of the Apache Public License
- * Please see the LICENSE included with this distribution for details.
- */
-
 #ifndef __DEVICE_H__
 #define __DEVICE_H__
 
-#include <map>
+#include "node-ios-device.h"
+#include "device-interface.h"
 #include "mobiledevice.h"
-#include "util.h"
+#include "relay.h"
+#include <CoreFoundation/CoreFoundation.h>
+#include <list>
+#include <map>
+#include <string>
 
 namespace node_ios_device {
 
-extern CFRunLoopRef runloop;
+LOG_DEBUG_EXTERN_VARS
 
-class LogRelayInfo;
+class PortRelay;
+class SyslogRelay;
 
-/**
- * Device object that persists while the device is plugged in. It contains the
- * original MobileDevice device reference and a V8 JavaScript object containing
- * the devices properties.
- */
 class Device {
 public:
-	CFStringRef   udid;
-	bool          loaded;
-	std::map<std::string, std::string> props;
+	Device(napi_env env, std::string& udid, am_device& dev, CFRunLoopRef runloop);
+
+	std::shared_ptr<DeviceInterface> changeInterface(am_device& dev, bool isAdd);
+	void install(std::string& appPath);
+	inline bool isDisconnected() const { return !usb && !wifi; }
+	napi_value toJS();
+
+	std::shared_ptr<PortRelay>       portRelay;
+	std::shared_ptr<SyslogRelay>     syslogRelay;
+	std::shared_ptr<DeviceInterface> usb;
+	std::shared_ptr<DeviceInterface> wifi;
 
 private:
-	am_device     handle;
-	int           connected;
-	std::map<uint32_t, LogRelayInfo*> logPortRelayInfo;
-	LogRelayInfo* syslogRelayInfo;
-
-public:
-	Device(am_device& dev);
-	~Device();
-
-	void init();
-	void install(const char* appPath);
-
-	void startLogPortRelay(uint32_t port);
-	void stopLogPortRelay(uint32_t port);
-	static void logPortRelaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info);
-
-	void startSyslogRelay();
-	void stopSyslogRelay();
-	static void syslogRelaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info);
-
-private:
-	void connect();
-	void disconnect(const bool force = false);
-	void startService(const char* serviceName, service_conn_t* conn);
-	void set(const char* key, CFStringRef id);
+	napi_env    env;
+	std::string udid;
+	std::map<const char*, std::string> props;
 };
 
-/**
- * A class to track log relay stuff.
- */
-class LogRelayInfo {
-public:
-	Device*            device;
-	std::string        eventName;
-	uint32_t           port;
-	service_conn_t     connection;
-	CFSocketRef        socket;
-	CFRunLoopSourceRef source;
-
-	LogRelayInfo(Device* _device, std::string _eventName) :
-		device(_device), eventName(_eventName), port(0), socket(NULL), source(NULL) {}
-
-	LogRelayInfo(Device* _device, std::string _eventName, uint32_t _port) :
-		device(_device), eventName(_eventName), port(_port), socket(NULL), source(NULL) {}
-
-	~LogRelayInfo() {
-		if (this->socket) {
-			::CFSocketInvalidate(this->socket);
-			::CFRelease(this->socket);
-			this->socket = NULL;
-		}
-
-		if (this->source) {
-			::CFRunLoopRemoveSource(runloop, this->source, kCFRunLoopCommonModes);
-
-			::CFRelease(this->source);
-			this->source = NULL;
-		}
-
-		::close(this->connection);
-	}
-};
-
-} // end namespace node_ios_device
+}
 
 #endif
