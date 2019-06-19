@@ -1,11 +1,3 @@
-TODO
-
-- add forward, syslog, track, and install tests
-- add comments to code
-
-
-
-
 # node-ios-device [![Build Status][3]][4] [![Greenkeeper badge][5]][6]
 
 Queries connected iOS devices, installs apps, and relays log output.
@@ -146,7 +138,7 @@ The `appPath` must resolve to an iOS .app, not the .ipa file.
 Relays the syslog from the iOS device.
 
 Starting with iOS 10, the syslog no longer contains application specific output. If you want output
-for a specific app, then you will need to use a TCP socket. See [`forward()`](#forward) for more info.
+for a specific app, then you will need to use a TCP socket. See [`forward()`](#forwardudid-port) for more info.
 
 * `{String} udid` - The device udid
 

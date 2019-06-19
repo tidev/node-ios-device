@@ -73,6 +73,9 @@ describe('devices()', () => {
 	});
 });
 
+describe('watch()', () => {
+});
+
 describe('install()', () => {
 	_it('should install the test app', () => {
 		const devices = iosDevice.list();
@@ -80,4 +83,10 @@ describe('install()', () => {
 			iosDevice.install(devices[0].udid, appPath);
 		}
 	});
+});
+
+describe('forward()', () => {
+});
+
+describe('syslog()', () => {
 });

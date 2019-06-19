@@ -11,7 +11,7 @@ cache:
   yarn: true
 install: yarn
 before_script: sh -c "git log | head -12"
-script: yarn run coverage
+script: yarn run test
 deploy:
   provider: npm
   email: npmjs@appcelerator.com
