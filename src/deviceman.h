@@ -15,8 +15,6 @@ LOG_DEBUG_EXTERN_VARS
 
 enum WatchAction { Watch, Unwatch };
 
-const double notificationWait = 0.5;
-
 /**
  * Device Manager that tracks connected devices.
  */
@@ -28,7 +26,6 @@ public:
 	void config(napi_value listener, WatchAction action);
 	std::shared_ptr<Device> getDevice(std::string& udid);
 	void init();
-	void install(std::string& udid, std::string& appPath);
 	napi_value list();
 
 private:

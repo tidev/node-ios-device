@@ -17,6 +17,10 @@ LOG_DEBUG_EXTERN_VARS
 class PortRelay;
 class SyslogRelay;
 
+/**
+ * Contains info for a connected device as well as the interfaces (USB/Wi-Fi) and the relays.
+ * Any device-specific queries or execution needs to be run at the interface level.
+ */
 class Device {
 public:
 	Device(napi_env env, std::string& udid, am_device& dev, CFRunLoopRef runloop);

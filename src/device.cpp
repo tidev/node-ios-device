@@ -4,7 +4,11 @@
 namespace node_ios_device {
 
 /**
- * TODO
+ * Initializes the device by creating the relays, initializing the supplied device interface, and
+ * retrieving the device properties.
+ *
+ * Not that we only need to get the props from the first device interface since it's the same
+ * regardless of the which interface.
  */
 Device::Device(napi_env env, std::string& udid, am_device& dev, CFRunLoopRef runloop) :
 	usb(NULL),
@@ -33,7 +37,7 @@ Device::Device(napi_env env, std::string& udid, am_device& dev, CFRunLoopRef run
 }
 
 /**
- * TODO
+ * Adds or removes a device interface.
  */
 std::shared_ptr<DeviceInterface> Device::changeInterface(am_device& dev, bool isAdd) {
 	uint32_t type = ::AMDeviceGetInterfaceType(dev);
@@ -82,7 +86,7 @@ void Device::install(std::string& appPath) {
 }
 
 /**
- * TODO
+ * Serialized the device info to a JavaScript object.
  */
 napi_value Device::toJS() {
 	napi_value obj;

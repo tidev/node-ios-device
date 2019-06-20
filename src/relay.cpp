@@ -3,7 +3,12 @@
 
 namespace node_ios_device {
 
-RelayConnection::RelayConnection(napi_env env, CFRunLoopRef runloop) :
+/**
+ * Initializes the relay connection and wires up the relay message async handler into Node's libuv
+ * runloop.
+ */
+RelayConnection::RelayConnection(napi_env env, CFRunLoopRef runloop, CFSocketNativeHandle nativeSocket) :
+	nativeSocket(nativeSocket),
 	env(env),
 	runloop(runloop),
 	socket(NULL),
@@ -16,12 +21,19 @@ RelayConnection::RelayConnection(napi_env env, CFRunLoopRef runloop) :
 	::uv_unref((uv_handle_t*)&msgQueueUpdate);
 }
 
+/**
+ * Shuts down a relay connection.
+ */
 RelayConnection::~RelayConnection() {
 	::uv_close((uv_handle_t*)&msgQueueUpdate, NULL);
 	disconnect();
 }
 
-void RelayConnection::add(napi_value listener, CFSocketNativeHandle sock) {
+/**
+ * Adds a listener. If this is the first listener, it increments/refs the libuv async handle so
+ * prevent Node from exiting.
+ */
+void RelayConnection::add(napi_value listener) {
 	napi_ref ref;
 	NAPI_THROW_RETURN("RelayConnection::add", "ERROR_NAPI_CREATE_REFERENCE", ::napi_create_reference(env, listener, 1, &ref), )
 
@@ -33,12 +45,15 @@ void RelayConnection::add(napi_value listener, CFSocketNativeHandle sock) {
 	}
 
 	if (count == 1) {
-		connect(sock);
+		connect();
 		::uv_ref((uv_handle_t*)&msgQueueUpdate);
 	}
 }
 
-void relaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void* data, void* conn) {
+/**
+ * Dispatches activity from the relay socket back to the relay connection object.
+ */
+static void relaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void* data, void* conn) {
 	if (type == kCFSocketDataCallBack) {
 		CFDataRef cfdata = (CFDataRef)data;
 		CFIndex size = ::CFDataGetLength(cfdata);
@@ -50,13 +65,16 @@ void relaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef add
 	}
 }
 
-void RelayConnection::connect(CFSocketNativeHandle sock) {
+/**
+ * Connects to the specified native socket and wires up the callback.
+ */
+void RelayConnection::connect() {
 	CFSocketContext socketCtx = { 0, this, NULL, NULL, NULL };
 
-	LOG_DEBUG_1("RelayConnection::connect", "Creating socket using specified file descriptor %d", sock)
+	LOG_DEBUG_1("RelayConnection::connect", "Creating socket using specified file descriptor %d", nativeSocket)
 	socket = ::CFSocketCreateWithNative(
 		kCFAllocatorDefault,
-		sock,
+		nativeSocket,
 		kCFSocketDataCallBack,
 		&relaySocketCallback,
 		&socketCtx
@@ -76,6 +94,9 @@ void RelayConnection::connect(CFSocketNativeHandle sock) {
 	::CFRunLoopAddSource(runloop, source, kCFRunLoopCommonModes);
 }
 
+/**
+ * Disconnects the socket and stops listening for incoming data.
+ */
 void RelayConnection::disconnect() {
 	if (source) {
 		LOG_DEBUG("RelayConnection::disconnect", "Removing socket source from run loop")
@@ -92,6 +113,9 @@ void RelayConnection::disconnect() {
 	}
 }
 
+/**
+ * Notifies all relay connection listeners of new data or the connection ending.
+ */
 void RelayConnection::dispatch() {
 	napi_handle_scope scope;
 	napi_value global, listener, argv[2], rval;
@@ -102,6 +126,8 @@ void RelayConnection::dispatch() {
 
 	std::list<napi_value> callbacks;
 
+	// resolves the listener N-API references and caches the JS callback functions in the
+	// `callbacks` list allowing the listener list to be quickly unlocked
 	{
 		std::lock_guard<std::mutex> lock(listenersLock);
 		for (auto const& ref : listeners) {
@@ -118,6 +144,7 @@ void RelayConnection::dispatch() {
 
 	std::lock_guard<std::mutex> lock2(msgQueueLock);
 
+	// flush the relay connection data to the listeners
 	while (!msgQueue.empty()) {
 		auto relayMsg = msgQueue.front();
 		msgQueue.pop();
@@ -136,6 +163,9 @@ void RelayConnection::dispatch() {
 	}
 }
 
+/**
+ * Creates an "end" message and queues it.
+ */
 void RelayConnection::onClose() {
 	disconnect();
 	{
@@ -145,6 +175,9 @@ void RelayConnection::onClose() {
 	::uv_async_send(&msgQueueUpdate);
 }
 
+/**
+ * Creates an "data" message for each line and queues it.
+ */
 void RelayConnection::onData(const char* data) {
 	std::string buffer;
 	bool changed = false;
@@ -173,6 +206,10 @@ void RelayConnection::onData(const char* data) {
 	}
 }
 
+/**
+ * Removes a callback from the relay connection. Once there are no more listeners, it
+ * decrements/unrefs the libuv async handle to all Node to exit.
+ */
 void RelayConnection::remove(napi_value listener) {
 	std::lock_guard<std::mutex> lock(listenersLock);
 
@@ -196,21 +233,31 @@ void RelayConnection::remove(napi_value listener) {
 	}
 }
 
+/**
+ * Returns the number of listeners for this relay connection.
+ */
 uint32_t RelayConnection::size() {
 	std::lock_guard<std::mutex> lock(listenersLock);
 	return listeners.size();
 }
 
+/**
+ * Initializes the base relay instance.
+ */
 Relay::Relay(napi_env env, Device* device, CFRunLoopRef runloop) :
 	env(env),
 	device(device),
 	runloop(runloop) {}
 
-Relay::~Relay() {}
-
+/**
+ * Intializes a port relay instance along with its base class.
+ */
 PortRelay::PortRelay(napi_env env, Device* device, CFRunLoopRef runloop) :
 	Relay(env, device, runloop) {}
 
+/**
+ * Adds or removes a listener to the specified port's relay connection.
+ */
 void PortRelay::config(RelayAction action, napi_value nport, napi_value listener) {
 	uint32_t port = 0;
 	napi_status status = ::napi_get_value_uint32(env, nport, &port);
@@ -223,31 +270,33 @@ void PortRelay::config(RelayAction action, napi_value nport, napi_value listener
 
 	if (action == Start) {
 		if (it == connections.end()) {
-			conn = std::make_shared<RelayConnection>(env, runloop);
+			// port relay connection does not exist, so create it
+
+			std::shared_ptr<DeviceInterface> iface = device->usb ? device->usb : device->wifi ? device->wifi : NULL;
+			if (!iface) {
+				throw std::runtime_error("Device has no USB or Wi-Fi interface");
+			}
+
+			uint32_t id = ::AMDeviceGetConnectionID(iface->dev);
+			int fd = -1;
+
+			LOG_DEBUG_1("PortRelay::config", "Trying to connect to port %d", port);
+			if (::USBMuxConnectByPort(id, htons(port), &fd) != 0) {
+				::close(fd);
+				std::stringstream error;
+				error << "Failed to connect to port " << port;
+				throw std::runtime_error(error.str());
+			}
+			LOG_DEBUG("PortRelay::config", "Connected");
+
+			conn = std::make_shared<RelayConnection>(env, runloop, fd);
 			connections.insert(std::make_pair(port, conn));
 		} else {
 			conn = it->second;
 		}
 
-		std::shared_ptr<DeviceInterface> iface = device->usb ? device->usb : device->wifi ? device->wifi : NULL;
-		if (!iface) {
-			throw std::runtime_error("Device has no USB or Wi-Fi interface");
-		}
-
-		uint32_t id = ::AMDeviceGetConnectionID(iface->dev);
-		int fd = -1;
-
-		LOG_DEBUG_1("PortRelay::config", "Trying to connect to port %d", port);
-		if (::USBMuxConnectByPort(id, htons(port), &fd) != 0) {
-			::close(fd);
-			std::stringstream error;
-			error << "Failed to connect to port " << port;
-			throw std::runtime_error(error.str());
-		}
-		LOG_DEBUG("PortRelay::config", "Connected");
-
 		LOG_DEBUG("PortRelay::config", "Adding listener to port relay connection")
-		conn->add(listener, fd);
+		conn->add(listener);
 
 	} else if (it != connections.end()) {
 		LOG_DEBUG("PortRelay::config", "Removing listener from port relay connection")
@@ -260,14 +309,24 @@ void PortRelay::config(RelayAction action, napi_value nport, napi_value listener
 	}
 }
 
+/**
+ * Intializes a syslog relay instance along with its base class.
+ */
 SyslogRelay::SyslogRelay(napi_env env, Device* device, CFRunLoopRef runloop) :
 	Relay(env, device, runloop),
-	relayConn(env, runloop) {}
+	connection(),
+	relayConn(env, runloop, connection) {}
 
+/**
+ * Closes the connection handle.
+ */
 SyslogRelay::~SyslogRelay() {
 	::close(connection);
 }
 
+/**
+ * Adds or removes a listener to the syslog relay connection.
+ */
 void SyslogRelay::config(RelayAction action, napi_value listener) {
 	if (action == Start) {
 		if (!device->usb) {
@@ -276,7 +335,7 @@ void SyslogRelay::config(RelayAction action, napi_value listener) {
 		device->usb->startService(AMSVC_SYSLOG_RELAY, &connection);
 
 		LOG_DEBUG("SyslogRelay::config", "Adding listener to syslog relay connection")
-		relayConn.add(listener, connection);
+		relayConn.add(listener);
 
 	} else {
 		LOG_DEBUG("SyslogRelay::config", "Removing listener from syslog relay connection")

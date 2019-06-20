@@ -3,9 +3,15 @@
 
 namespace node_ios_device {
 
+/**
+ * Initialzies the device interface.
+ */
 DeviceInterface::DeviceInterface(std::string& udid, am_device& dev) :
 	dev(dev), udid(udid), numConnections(0) {}
 
+/**
+ * Cleanup the device interface, namely disconnects and stops the active session.
+ */
 DeviceInterface::~DeviceInterface() {
 	disconnect(true);
 }
@@ -20,6 +26,7 @@ void DeviceInterface::connect() {
 		return;
 	}
 
+	// connection ref counter
 	if (numConnections < 0) {
 		numConnections = 0;
 	}
@@ -98,11 +105,17 @@ void DeviceInterface::disconnect(const bool force) {
 	}
 }
 
+/**
+ * Retrieves a property from the device and copies it into a string that we can work with.
+ */
 std::string DeviceInterface::getProp(CFStringRef key) {
 	CFStringRef value = (CFStringRef)::AMDeviceCopyValue(dev, 0, key);
 	return value ? std::string(::CFStringGetCStringPtr(value, kCFStringEncodingUTF8)) : "";
 }
 
+/**
+ * Connects to the device and installs an app using the specified local directory.
+ */
 void DeviceInterface::install(std::string& appPath) {
 	CFStringRef appPathStr = ::CFStringCreateWithCString(NULL, appPath.c_str(), kCFStringEncodingUTF8);
 	CFURLRef relativeUrl = ::CFURLCreateWithFileSystemPath(NULL, appPathStr, kCFURLPOSIXPathStyle, false);
@@ -135,6 +148,7 @@ void DeviceInterface::install(std::string& appPath) {
 	rval = ::AMDeviceSecureInstallApplication(0, dev, localUrl, options, NULL, 0);
 	::CFRelease(options);
 	::CFRelease(localUrl);
+
 	disconnect();
 
 	if (rval == -402620395) {
@@ -148,6 +162,7 @@ void DeviceInterface::install(std::string& appPath) {
 
 /**
  * Starts a service.
+ *
  * Note that if the call to AMDeviceStartService() fails, it's probably because MobileDevice thinks
  * we're connected and paired, but we're not.
  */

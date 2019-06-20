@@ -33,6 +33,7 @@ try {
 } catch (e) {
 	appit = it.skip;
 	appit.only = it.only;
+	appit.skip = it.skip;
 }
 
 describe('devices()', () => {
@@ -190,7 +191,7 @@ describe('forward()', () => {
 		}).to.throw(Error, 'Failed to connect to port 23456');
 	});
 
-	appit.only('should forward port messages', function () {
+	appit.skip('should forward port messages', function () {
 		this.timeout(15000);
 		this.slow(15000);
 
@@ -243,7 +244,7 @@ describe('syslog()', () => {
 		}).to.throw(Error, 'Device "foo" not found');
 	});
 
-	appit('should relay syslog messages', async function () {
+	appit.skip('should relay syslog messages', async function () {
 		this.timeout(15000);
 		this.slow(15000);
 

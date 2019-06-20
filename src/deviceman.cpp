@@ -30,7 +30,7 @@ DeviceMan::~DeviceMan() {
 }
 
 /**
- * TODO
+ * Configures the device notfication listeners.
  */
 void DeviceMan::config(napi_value listener, WatchAction action) {
 	if (action == Watch) {
@@ -69,18 +69,19 @@ void DeviceMan::config(napi_value listener, WatchAction action) {
 }
 
 /**
- * TODO
+ * Creates a timer on the background thread that will fire after 500ms and unlock the init mutex
+ * on the main thread.
  */
 void DeviceMan::createInitTimer() {
 	if (initialized) {
 		return;
 	}
 
-	// set a timer for 250ms to unlock the initMutex
+	// set a timer for 500ms to unlock the initMutex
 	CFRunLoopTimerContext timerContext = { 0, (void*)this, NULL, NULL, NULL };
 	initTimer = ::CFRunLoopTimerCreate(
-		kCFAllocatorDefault, // allocator
-		CFAbsoluteTimeGetCurrent() + notificationWait, // fireDate
+		kCFAllocatorDefault,
+		CFAbsoluteTimeGetCurrent() + 0.5f,
 		0, // interval
 		0, // flags
 		0, // order
@@ -123,6 +124,9 @@ void DeviceMan::dispatch() {
 	}
 }
 
+/**
+ * Attempts to find a connected device by udid or throws an error if not found.
+ */
 std::shared_ptr<Device> DeviceMan::getDevice(std::string& udid) {
 	auto it = devices.find(udid);
 
@@ -135,7 +139,8 @@ std::shared_ptr<Device> DeviceMan::getDevice(std::string& udid) {
 }
 
 /**
- * TODO
+ * Initializes the device manager by spawning the background thread and locking the init mutex.
+ * This is run on the main thread.
  */
 void DeviceMan::init() {
 	LOG_DEBUG_THREAD_ID("DeviceMan::init", "Starting background thread")
@@ -154,27 +159,7 @@ void DeviceMan::init() {
 }
 
 /**
- * TODO
- */
-void DeviceMan::install(std::string& udid, std::string& appPath) {
-	auto it = devices.find(udid);
-
-	if (it == devices.end()) {
-		std::string msg = "Device \"" + udid + "\" not found";
-		NAPI_THROW_ERROR("ERR_UDID_NOT_FOUND", msg.c_str(), msg.length(), )
-	}
-
-	try {
-		it->second->install(appPath);
-	} catch (std::exception& e) {
-		const char* msg = e.what();
-		LOG_DEBUG_1("DeviceMan::install", "%s", msg)
-		NAPI_THROW_ERROR("ERR_UDID_NOT_FOUND", msg, ::strlen(msg), )
-	}
-}
-
-/**
- * TODO
+ * Copies the connected devices into a JavaScript array of device objects.
  */
 napi_value DeviceMan::list() {
 	napi_value rval;
@@ -257,7 +242,7 @@ void DeviceMan::run() {
 }
 
 /**
- * TODO
+ * Kills the init mutex timer.
  */
 void DeviceMan::stopInitTimer() {
 	if (initTimer) {

@@ -12,6 +12,11 @@ LOG_DEBUG_EXTERN_VARS
 
 enum InterfaceType { USB, WiFi };
 
+/**
+ * Represents a specific interface to a device. There are only 2 supported interfaces: USB and
+ * Wi-Fi. Whenever something needs to queried or run on the device, it must run through this
+ * interface.
+ */
 class DeviceInterface {
 public:
 	DeviceInterface(std::string& udid, am_device& dev);
