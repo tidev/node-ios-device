@@ -17,6 +17,9 @@ enum WatchAction { Watch, Unwatch };
 
 const double notificationWait = 0.5;
 
+/**
+ * Device Manager that tracks connected devices.
+ */
 class DeviceMan {
 public:
 	DeviceMan(napi_env env);

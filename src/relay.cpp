@@ -25,10 +25,14 @@ void RelayConnection::add(napi_value listener, CFSocketNativeHandle sock) {
 	napi_ref ref;
 	NAPI_THROW_RETURN("RelayConnection::add", "ERROR_NAPI_CREATE_REFERENCE", ::napi_create_reference(env, listener, 1, &ref), )
 
-	std::lock_guard<std::mutex> lock(listenersLock);
-	listeners.push_back(ref);
+	size_t count = 0;
+	{
+		std::lock_guard<std::mutex> lock(listenersLock);
+		listeners.push_back(ref);
+		count = listeners.size();
+	}
 
-	if (listeners.size() == 1) {
+	if (count == 1) {
 		connect(sock);
 		::uv_ref((uv_handle_t*)&msgQueueUpdate);
 	}
@@ -49,7 +53,7 @@ void relaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef add
 void RelayConnection::connect(CFSocketNativeHandle sock) {
 	CFSocketContext socketCtx = { 0, this, NULL, NULL, NULL };
 
-	LOG_DEBUG("RelayConnection::connect", "Creating socket to syslog service")
+	LOG_DEBUG_1("RelayConnection::connect", "Creating socket using specified file descriptor %d", sock)
 	socket = ::CFSocketCreateWithNative(
 		kCFAllocatorDefault,
 		sock,
@@ -68,18 +72,20 @@ void RelayConnection::connect(CFSocketNativeHandle sock) {
 		throw std::runtime_error("Failed to create socket run loop source");
 	}
 
-	LOG_DEBUG("RelayConnection::connect", "Adding run loop source to run loop")
+	LOG_DEBUG("RelayConnection::connect", "Adding socket source to run loop")
 	::CFRunLoopAddSource(runloop, source, kCFRunLoopCommonModes);
 }
 
 void RelayConnection::disconnect() {
 	if (source) {
+		LOG_DEBUG("RelayConnection::disconnect", "Removing socket source from run loop")
 		::CFRunLoopRemoveSource(runloop, source, kCFRunLoopCommonModes);
 		::CFRelease(source);
 		source = NULL;
 	}
 
 	if (socket) {
+		LOG_DEBUG("RelayConnection::disconnect", "Releasing socket")
 		::CFSocketInvalidate(socket);
 		::CFRelease(socket);
 		socket = NULL;
@@ -88,20 +94,21 @@ void RelayConnection::disconnect() {
 
 void RelayConnection::dispatch() {
 	napi_handle_scope scope;
-	napi_value global, argv[2], rval;
+	napi_value global, listener, argv[2], rval;
 	int argc;
 
 	NAPI_THROW("RelayConnection::dispatch", "ERR_NAPI_OPEN_HANDLE_SCOPE", ::napi_open_handle_scope(env, &scope))
 	NAPI_THROW("RelayConnection::dispatch", "ERR_NAPI_GET_GLOBAL", ::napi_get_global(env, &global))
 
-	std::lock_guard<std::mutex> lock(listenersLock);
-
 	std::list<napi_value> callbacks;
-	for (auto const& ref : listeners) {
-		napi_value listener;
-		NAPI_THROW("RelayConnection::dispatch", "ERR_NAPI_GET_REFERENCE_VALUE", ::napi_get_reference_value(env, ref, &listener))
-		if (listener != NULL) {
-			callbacks.push_back(listener);
+
+	{
+		std::lock_guard<std::mutex> lock(listenersLock);
+		for (auto const& ref : listeners) {
+			NAPI_THROW("RelayConnection::dispatch", "ERR_NAPI_GET_REFERENCE_VALUE", ::napi_get_reference_value(env, ref, &listener))
+			if (listener != NULL) {
+				callbacks.push_back(listener);
+			}
 		}
 	}
 
@@ -156,7 +163,6 @@ void RelayConnection::onData(const char* data) {
 	}
 
 	if (!buffer.empty()) {
-		printf("PUSHING!\n");
 		std::lock_guard<std::mutex> lock(msgQueueLock);
 		msgQueue.push(new RelayMessage("data", buffer));
 		changed = true;
@@ -245,9 +251,9 @@ void PortRelay::config(RelayAction action, napi_value nport, napi_value listener
 
 	} else if (it != connections.end()) {
 		LOG_DEBUG("PortRelay::config", "Removing listener from port relay connection")
-		conn->remove(listener);
+		it->second->remove(listener);
 
-		if (conn->size() == 0) {
+		if (it->second->size() == 0) {
 			LOG_DEBUG("PortRelay::config", "Connection has no more listeners, removing")
 			connections.erase(it);
 		}

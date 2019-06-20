@@ -33,8 +33,13 @@ binding.init((ns, msg) => {
  * @emits {end} Emits when the device has been disconnected.
  */
 api.forward = function forward(udid, port) {
+	if (!udid || typeof udid !== 'string') {
+		throw new TypeError('Expected udid to be a non-empty string');
+	}
+
 	const handle = new EventEmitter();
 	const emit = handle.emit.bind(handle);
+	port = ~~port;
 
 	handle.stop = function stop() {
 		binding.stopForward(udid, port, emit);
@@ -67,8 +72,12 @@ api.install = function install(udid, appPath) {
 		throw new Error(`App not found: ${appPath}`);
 	}
 
-	if (!fs.statSync(path.join(appPath, 'PkgInfo')).isFile()) {
-		throw new Error(`Invalid app path: ${appPath}`);
+	try {
+		if (!fs.statSync(path.join(appPath, 'PkgInfo')).isFile()) {
+			throw new Error();
+		}
+	} catch (e) {
+		throw new Error(`Invalid app: ${appPath}`);
 	}
 
 	binding.install(udid, appPath);
@@ -90,6 +99,10 @@ api.list = binding.list;
  * @emits {end} Emits when the device has been disconnected.
  */
 api.syslog = function syslog(udid) {
+	if (!udid || typeof udid !== 'string') {
+		throw new TypeError('Expected udid to be a non-empty string');
+	}
+
 	const handle = new EventEmitter();
 	const emit = handle.emit.bind(handle);
 

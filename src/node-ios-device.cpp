@@ -117,6 +117,9 @@ NAPI_METHOD(init) {
 	NAPI_RETURN_UNDEFINED("init")
 }
 
+/**
+ * Helper function that converts a JavaScript string into a std string.
+ */
 std::string napi_string_to_std_string(napi_env env, napi_value str) {
 	size_t len;
 	std::string rval;
@@ -161,6 +164,9 @@ NAPI_METHOD(list) {
 	return rval;
 }
 
+/**
+ * Helper for generating the forward() and syslog() functions.
+ */
 #define CREATE_LOG_METHOD(name, argc, errCode, code) \
 	NAPI_METHOD(name) { \
 		NAPI_ARGV(argc); \
@@ -177,6 +183,10 @@ NAPI_METHOD(list) {
 		NAPI_RETURN_UNDEFINED(STRINGIFY(name)) \
 	}
 
+/**
+ * forward() and syslog()
+ * All of the logic is performed in the device's relay object.
+ */
 CREATE_LOG_METHOD(startForward, 3, "ERR_FORWARD_START", device->portRelay->config(Start, argv[1], argv[2]))
 CREATE_LOG_METHOD(stopForward,  3, "ERR_FORWARD_STOP",  device->portRelay->config(Stop, argv[1], argv[2]))
 

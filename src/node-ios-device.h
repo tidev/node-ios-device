@@ -15,6 +15,9 @@
 #include <uv.h>
 
 namespace node_ios_device {
+	/**
+	 * A debug log message including the namespace.
+	 */
 	struct LogMessage {
 		LogMessage() {}
 		LogMessage(const std::string ns, const std::string msg) : ns(ns), msg(msg) {}

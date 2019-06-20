@@ -3,7 +3,8 @@
 namespace node_ios_device {
 
 /**
- * TODO
+ * Creates the async device change notification handler, then immediately unrefs it as to not block
+ * Node from quitting.
  */
 DeviceMan::DeviceMan(napi_env env) : env(env), initialized(false), initTimer(NULL), runloop(NULL) {
 	// wire up our dispatch change handler into Node's event loop, then unref it so that we don't
@@ -16,7 +17,7 @@ DeviceMan::DeviceMan(napi_env env) : env(env), initialized(false), initTimer(NUL
 }
 
 /**
- * TODO
+ * Releases the async handle, unsubscribes from iOS device notifications, and stops the runloop.
  */
 DeviceMan::~DeviceMan() {
 	::uv_close((uv_handle_t*)&notifyChange, NULL);

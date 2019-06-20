@@ -14,11 +14,11 @@ static void trySetNonBlocking(int socket, const char *type) {
 
 @implementation Connection
 
- - (id)initWithSocket:(int)remoteSock server:(Server*)_server {
+- (id)initWithSocket:(int)remoteSock server:(Server*)_server {
 	socket = remoteSock;
 	readSource = nil;
 	server = _server;
-	
+
 	setsockopt(socket, SOL_SOCKET, SO_NOSIGPIPE, &(int){ 1 }, sizeof(int));
 	trySetNonBlocking(socket, "connection\'s");
 
@@ -33,7 +33,7 @@ static void trySetNonBlocking(int socket, const char *type) {
 	});
 
 	dispatch_resume(readSource);
-	
+
 	return self;
 }
 
@@ -93,54 +93,54 @@ static void trySetNonBlocking(int socket, const char *type) {
 	setsockopt(serverSock, SOL_SOCKET, SO_NOSIGPIPE, &(int){ 1 }, sizeof(int));
 
 	trySetNonBlocking(serverSock, "server\'s listening");
-	
+
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_len = sizeof(addr);
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(PORT);
 	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	
+
 	if (bind(serverSock, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
 		NSLog(@"[ERROR] Failed to bind listening socket on port %d", PORT);
 		close(serverSock);
 		return;
 	}
-	
+
 	if (listen(serverSock, 4) != 0) {
 		close(serverSock);
 		NSLog(@"[ERROR] Failed to start listening on port %d", PORT);
 		return;
 	}
-	
+
 	dispatchQueue = dispatch_queue_create("queue", DISPATCH_QUEUE_SERIAL);
 	dispatchSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, serverSock, 0, dispatchQueue);
-	
+
 	dispatch_source_set_event_handler(dispatchSource, ^{
 		// accept the connection
 		int remoteSock = accept(self->serverSock, NULL, NULL);
 		if (remoteSock <= 0) {
 			return;
 		}
-		
+
 		Connection* conn = [[Connection alloc] initWithSocket:remoteSock server:self];
 		if (!conn) {
 			return;
 		}
-		
+
 		[self->connections addObject:conn];
 		NSLog(@"[INFO] # connections: %lu", (unsigned long)[self->connections count]);
-		
+
 		// send the header
 		[conn send:@"Hello!"];
-		
+
 		for (NSString* message in self->messages) {
 			[conn send:message];
 		}
 	});
-	
+
 	dispatch_resume(dispatchSource);
-	
+
 	[NSTimer scheduledTimerWithTimeInterval: 1.0
 									 target: self
 								   selector: @selector(onTick:)
@@ -153,13 +153,13 @@ static void trySetNonBlocking(int socket, const char *type) {
 		close(serverSock);
 		serverSock = -1;
 	}
-	
+
 	if (connections != nil) {
 		for (id conn in connections) {
 			[conn disconnect];
 		}
 	}
-	
+
 	if (dispatchSource != nil) {
 		dispatch_source_cancel(dispatchSource);
 		dispatchSource = nil;
