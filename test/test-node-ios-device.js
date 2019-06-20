@@ -123,24 +123,24 @@ describe('install()', () => {
 
 	it('should error if app path is invalid', () => {
 		expect(() => {
-			iosDevice.install(udid);
+			iosDevice.install('foo');
 		}).to.throw(TypeError, 'Expected app path to be a non-empty string');
 
 		expect(() => {
-			iosDevice.install(udid, 123);
+			iosDevice.install('foo', 123);
 		}).to.throw(Error, 'Expected app path to be a non-empty string');
 
 		const p = path.join(__dirname, 'does_not_exist');
 		expect(() => {
-			iosDevice.install(udid, p);
+			iosDevice.install('foo', p);
 		}).to.throw(Error, `App not found: ${p}`);
 
 		expect(() => {
-			iosDevice.install(udid, __dirname);
+			iosDevice.install('foo', __dirname);
 		}).to.throw(Error, `Invalid app: ${__dirname}`);
 	});
 
-	it('should error if udid device is not connected', () => {
+	appit('should error if udid device is not connected', () => {
 		expect(() => {
 			iosDevice.install('foo', appPath);
 		}).to.throw(Error, 'Device "foo" not found');
@@ -171,7 +171,7 @@ describe('forward()', () => {
 		}).to.throw(Error, 'Device "foo" not found');
 	});
 
-	it('should fail if port is invalid', () => {
+	devit('should fail if port is invalid', () => {
 		expect(() => {
 			iosDevice.forward(udid);
 		}).to.throw(Error, 'Expected port to be a number between 1 and 65535');
