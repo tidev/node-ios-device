@@ -46,7 +46,7 @@ private:
 	CFRunLoopTimerRef initTimer;
 	std::timed_mutex initMutex;
 
-	CFRunLoopRef runloop;
+	std::shared_ptr<CFRunLoopRef> runloop;
 
 	std::mutex listenersLock;
 	std::list<napi_ref> listeners;

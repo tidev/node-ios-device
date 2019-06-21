@@ -6,7 +6,12 @@ namespace node_ios_device {
  * Creates the async device change notification handler, then immediately unrefs it as to not block
  * Node from quitting.
  */
-DeviceMan::DeviceMan(napi_env env) : env(env), initialized(false), initTimer(NULL), runloop(NULL) {
+DeviceMan::DeviceMan(napi_env env) :
+	env(env),
+	initialized(false),
+	initTimer(NULL),
+	runloop(NULL) {
+
 	// wire up our dispatch change handler into Node's event loop, then unref it so that we don't
 	// block Node from exiting
 	uv_loop_t* loop;
@@ -24,7 +29,7 @@ DeviceMan::~DeviceMan() {
 	::AMDeviceNotificationUnsubscribe(deviceNotification);
 	stopInitTimer();
 	if (runloop) {
-		::CFRunLoopStop(runloop);
+		::CFRunLoopStop(*runloop);
 		runloop = NULL;
 	}
 }
@@ -96,7 +101,7 @@ void DeviceMan::createInitTimer() {
 	);
 
 	LOG_DEBUG("DeviceMan::createInitTimer", "Adding init timer to run loop")
-	::CFRunLoopAddTimer(runloop, initTimer, kCFRunLoopCommonModes);
+	::CFRunLoopAddTimer(*runloop, initTimer, kCFRunLoopCommonModes);
 }
 
 /**
@@ -233,7 +238,7 @@ void DeviceMan::run() {
 	LOG_DEBUG("DeviceMan::run", "Subscribing to device notifications")
 	::AMDeviceNotificationSubscribe([](am_device_notification_callback_info* info, void* arg) { ((DeviceMan*)arg)->onDeviceNotification(info); }, 0, 0, (void*)this, &deviceNotification);
 
-	runloop = ::CFRunLoopGetCurrent();
+	runloop = std::make_shared<CFRunLoopRef>(::CFRunLoopGetCurrent());
 
 	createInitTimer();
 
@@ -248,7 +253,7 @@ void DeviceMan::stopInitTimer() {
 	if (initTimer) {
 		LOG_DEBUG("DeviceMan::stopInitTimer", "Removing init timer from run loop")
 		::CFRunLoopTimerInvalidate(initTimer);
-		::CFRunLoopRemoveTimer(runloop, initTimer, kCFRunLoopCommonModes);
+		::CFRunLoopRemoveTimer(*runloop, initTimer, kCFRunLoopCommonModes);
 		::CFRelease(initTimer);
 		initTimer = NULL;
 	}

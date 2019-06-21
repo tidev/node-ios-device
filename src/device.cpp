@@ -10,7 +10,7 @@ namespace node_ios_device {
  * Not that we only need to get the props from the first device interface since it's the same
  * regardless of the which interface.
  */
-Device::Device(napi_env env, std::string& udid, am_device& dev, CFRunLoopRef runloop) :
+Device::Device(napi_env env, std::string& udid, am_device& dev, std::weak_ptr<CFRunLoopRef> runloop) :
 	usb(NULL),
 	wifi(NULL),
 	env(env),

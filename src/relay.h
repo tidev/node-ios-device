@@ -15,6 +15,7 @@ namespace node_ios_device {
 enum RelayAction { Start, Stop };
 
 class Device;
+struct RelayConnectionData;
 
 /**
  * A message containing an event and relay message. Instances are created on the background thread,
@@ -37,10 +38,11 @@ struct RelayMessage {
  */
 class RelayConnection {
 public:
-	RelayConnection(napi_env env, CFRunLoopRef runloop, CFSocketNativeHandle nativeSocket);
+	RelayConnection(napi_env env, std::weak_ptr<CFRunLoopRef> runloop, int* fd);
 	virtual ~RelayConnection();
 	void add(napi_value listener);
 	void dispatch();
+	void init(RelayConnectionData* data);
 	void onClose();
 	void onData(const char* data);
 	void remove(napi_value listener);
@@ -50,16 +52,24 @@ protected:
 	void connect();
 	void disconnect();
 
-	CFSocketNativeHandle      nativeSocket;
-	napi_env                  env;
-	std::mutex                listenersLock;
-	std::list<napi_ref>       listeners;
-	CFRunLoopRef              runloop;
-	CFSocketRef               socket;
-	CFRunLoopSourceRef        source;
-	std::queue<RelayMessage*> msgQueue;
-	std::mutex                msgQueueLock;
-	uv_async_t                msgQueueUpdate;
+	int*                        fd;
+	napi_env                    env;
+	std::mutex                  listenersLock;
+	std::list<napi_ref>         listeners;
+	std::weak_ptr<CFRunLoopRef> runloop;
+	CFSocketRef                 socket;
+	CFRunLoopSourceRef          source;
+	std::mutex                  msgQueueLock;
+	uv_async_t                  msgQueueUpdate;
+	std::queue<std::shared_ptr<RelayMessage>> msgQueue;
+};
+
+/**
+ * A wrapper around a weak pointer so that we can pass the weak pointer to the libuv async handler.
+ */
+struct RelayConnectionData {
+	RelayConnectionData(std::weak_ptr<RelayConnection> conn) : conn(conn) {}
+	std::weak_ptr<RelayConnection> conn;
 };
 
 /**
@@ -67,13 +77,13 @@ protected:
  */
 class Relay {
 public:
-	Relay(napi_env env, Device* device, CFRunLoopRef runloop);
+	Relay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop);
 	virtual ~Relay() {};
 
 protected:
 	napi_env     env;
 	Device*      device;
-	CFRunLoopRef runloop;
+	std::weak_ptr<CFRunLoopRef> runloop;
 };
 
 /**
@@ -84,7 +94,7 @@ protected:
  */
 class PortRelay : public Relay {
 public:
-	PortRelay(napi_env env, Device* device, CFRunLoopRef runloop);
+	PortRelay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop);
 	void config(RelayAction action, napi_value nport, napi_value listener);
 
 protected:
@@ -96,14 +106,14 @@ protected:
  */
 class SyslogRelay : public Relay {
 public:
-	SyslogRelay(napi_env env, Device* device, CFRunLoopRef runloop);
+	SyslogRelay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop);
 	~SyslogRelay();
 	void config(RelayAction action, napi_value listener);
 
 	service_conn_t connection;
 
 protected:
-	RelayConnection relayConn;
+	std::shared_ptr<RelayConnection> relayConn;
 };
 
 }

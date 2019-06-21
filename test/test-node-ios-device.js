@@ -191,7 +191,7 @@ describe('forward()', () => {
 		}).to.throw(Error, 'Failed to connect to port 23456');
 	});
 
-	appit.skip('should forward port messages', function () {
+	appit('should forward port messages', function () {
 		this.timeout(15000);
 		this.slow(15000);
 
@@ -208,7 +208,6 @@ describe('forward()', () => {
 				const forwardHandle = iosDevice.forward(udid, 12345);
 				let counter = 0;
 				forwardHandle.on('data', msg => {
-					console.log(msg);
 					try {
 						if (counter++ === 3) {
 							forwardHandle.stop();
@@ -244,15 +243,13 @@ describe('syslog()', () => {
 		}).to.throw(Error, 'Device "foo" not found');
 	});
 
-	appit.skip('should relay syslog messages', async function () {
+	appit('should relay syslog messages', async function () {
 		this.timeout(15000);
 		this.slow(15000);
 
 		let counter = 0;
 		const syslogHandle = iosDevice.syslog(udid);
-		syslogHandle.on('data', msg => {
-			counter++;
-		});
+		syslogHandle.on('data', msg => counter++);
 
 		await new Promise(resolve => setTimeout(resolve, 2000));
 		expect(counter).to.be.gt(0);

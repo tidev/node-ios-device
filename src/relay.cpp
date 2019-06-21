@@ -7,24 +7,18 @@ namespace node_ios_device {
  * Initializes the relay connection and wires up the relay message async handler into Node's libuv
  * runloop.
  */
-RelayConnection::RelayConnection(napi_env env, CFRunLoopRef runloop, CFSocketNativeHandle nativeSocket) :
-	nativeSocket(nativeSocket),
+RelayConnection::RelayConnection(napi_env env, std::weak_ptr<CFRunLoopRef> runloop, int* fd) :
+	fd(fd),
 	env(env),
 	runloop(runloop),
 	socket(NULL),
-	source(NULL) {
-
-	uv_loop_t* loop;
-	::napi_get_uv_event_loop(env, &loop);
-	msgQueueUpdate.data = this;
-	::uv_async_init(loop, &msgQueueUpdate, [](uv_async_t* handle) { ((RelayConnection*)handle->data)->dispatch(); });
-	::uv_unref((uv_handle_t*)&msgQueueUpdate);
-}
+	source(NULL) {}
 
 /**
  * Shuts down a relay connection.
  */
 RelayConnection::~RelayConnection() {
+	delete reinterpret_cast<RelayConnectionData*>(msgQueueUpdate.data);
 	::uv_close((uv_handle_t*)&msgQueueUpdate, NULL);
 	disconnect();
 }
@@ -45,8 +39,8 @@ void RelayConnection::add(napi_value listener) {
 	}
 
 	if (count == 1) {
-		connect();
 		::uv_ref((uv_handle_t*)&msgQueueUpdate);
+		connect();
 	}
 }
 
@@ -71,10 +65,10 @@ static void relaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFData
 void RelayConnection::connect() {
 	CFSocketContext socketCtx = { 0, this, NULL, NULL, NULL };
 
-	LOG_DEBUG_1("RelayConnection::connect", "Creating socket using specified file descriptor %d", nativeSocket)
+	LOG_DEBUG_1("RelayConnection::connect", "Creating socket using specified file descriptor %d", *fd)
 	socket = ::CFSocketCreateWithNative(
 		kCFAllocatorDefault,
-		nativeSocket,
+		(CFSocketNativeHandle)*fd,
 		kCFSocketDataCallBack,
 		&relaySocketCallback,
 		&socketCtx
@@ -91,7 +85,9 @@ void RelayConnection::connect() {
 	}
 
 	LOG_DEBUG("RelayConnection::connect", "Adding socket source to run loop")
-	::CFRunLoopAddSource(runloop, source, kCFRunLoopCommonModes);
+	if (auto rl = runloop.lock()) {
+		::CFRunLoopAddSource(*rl, source, kCFRunLoopCommonModes);
+	}
 }
 
 /**
@@ -100,7 +96,9 @@ void RelayConnection::connect() {
 void RelayConnection::disconnect() {
 	if (source) {
 		LOG_DEBUG("RelayConnection::disconnect", "Removing socket source from run loop")
-		::CFRunLoopRemoveSource(runloop, source, kCFRunLoopCommonModes);
+		if (auto rl = runloop.lock()) {
+			::CFRunLoopRemoveSource(*rl, source, kCFRunLoopCommonModes);
+		}
 		::CFRelease(source);
 		source = NULL;
 	}
@@ -142,12 +140,20 @@ void RelayConnection::dispatch() {
 		return;
 	}
 
-	std::lock_guard<std::mutex> lock2(msgQueueLock);
+	while (socket) {
+		std::shared_ptr<RelayMessage> relayMsg;
 
-	// flush the relay connection data to the listeners
-	while (!msgQueue.empty()) {
-		auto relayMsg = msgQueue.front();
-		msgQueue.pop();
+		{
+			std::lock_guard<std::mutex> lock(msgQueueLock);
+
+			// flush the relay connection data to the listeners
+			if (msgQueue.empty()) {
+				break;
+			}
+
+			relayMsg = msgQueue.front();
+			msgQueue.pop();
+		}
 
 		argc = 1;
 		NAPI_THROW("RelayConnection::dispatch", "ERR_NAPI_CREATE_STRING_UTF8", ::napi_create_string_utf8(env, relayMsg->event, NAPI_AUTO_LENGTH, &argv[0]))
@@ -164,13 +170,33 @@ void RelayConnection::dispatch() {
 }
 
 /**
+ * Wires up the relay message dispatch handler. This must be done in a separate method instead of
+ * the constructor because we need to pass the shared pointer to this instance to the async handler
+ * and that can't happen until the instance is created and an existing shared pointer is pointing
+ * to this instance. Note that the shared pointer to this relay connection instance is created when
+ * it's inserted into the
+ */
+void RelayConnection::init(RelayConnectionData* data) {
+	uv_loop_t* loop;
+	::napi_get_uv_event_loop(env, &loop);
+	msgQueueUpdate.data = data;
+	::uv_async_init(loop, &msgQueueUpdate, [](uv_async_t* handle) {
+		RelayConnectionData* data = (RelayConnectionData*)handle->data;
+		if (auto conn = data->conn.lock()) {
+			conn->dispatch();
+		}
+	});
+	::uv_unref((uv_handle_t*)&msgQueueUpdate);
+}
+
+/**
  * Creates an "end" message and queues it.
  */
 void RelayConnection::onClose() {
 	disconnect();
 	{
 		std::lock_guard<std::mutex> lock(msgQueueLock);
-		msgQueue.push(new RelayMessage("end"));
+		msgQueue.push(std::make_shared<RelayMessage>("end"));
 	}
 	::uv_async_send(&msgQueueUpdate);
 }
@@ -182,23 +208,25 @@ void RelayConnection::onData(const char* data) {
 	std::string buffer;
 	bool changed = false;
 
-	for (; *data; ++data) {
-		if (*data == '\0' || *data == '\r' || *data == '\n') {
-			if (!buffer.empty()) {
-				std::lock_guard<std::mutex> lock(msgQueueLock);
-				msgQueue.push(new RelayMessage("data", buffer));
-				changed = true;
-				buffer.clear();
-			}
-		} else {
-			buffer += *data;
-		}
-	}
-
-	if (!buffer.empty()) {
+	{
 		std::lock_guard<std::mutex> lock(msgQueueLock);
-		msgQueue.push(new RelayMessage("data", buffer));
-		changed = true;
+
+		for (; *data; ++data) {
+			if (*data == '\0' || *data == '\r' || *data == '\n') {
+				if (!buffer.empty()) {
+					msgQueue.push(std::make_shared<RelayMessage>("data", buffer));
+					changed = true;
+					buffer.clear();
+				}
+			} else {
+				buffer += *data;
+			}
+		}
+
+		if (!buffer.empty()) {
+			msgQueue.push(std::make_shared<RelayMessage>("data", buffer));
+			changed = true;
+		}
 	}
 
 	if (changed) {
@@ -244,7 +272,7 @@ uint32_t RelayConnection::size() {
 /**
  * Initializes the base relay instance.
  */
-Relay::Relay(napi_env env, Device* device, CFRunLoopRef runloop) :
+Relay::Relay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop) :
 	env(env),
 	device(device),
 	runloop(runloop) {}
@@ -252,7 +280,7 @@ Relay::Relay(napi_env env, Device* device, CFRunLoopRef runloop) :
 /**
  * Intializes a port relay instance along with its base class.
  */
-PortRelay::PortRelay(napi_env env, Device* device, CFRunLoopRef runloop) :
+PortRelay::PortRelay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop) :
 	Relay(env, device, runloop) {}
 
 /**
@@ -289,8 +317,9 @@ void PortRelay::config(RelayAction action, napi_value nport, napi_value listener
 			}
 			LOG_DEBUG("PortRelay::config", "Connected");
 
-			conn = std::make_shared<RelayConnection>(env, runloop, fd);
+			conn = std::make_shared<RelayConnection>(env, runloop, &fd);
 			connections.insert(std::make_pair(port, conn));
+			conn->init(new RelayConnectionData(conn));
 		} else {
 			conn = it->second;
 		}
@@ -312,10 +341,12 @@ void PortRelay::config(RelayAction action, napi_value nport, napi_value listener
 /**
  * Intializes a syslog relay instance along with its base class.
  */
-SyslogRelay::SyslogRelay(napi_env env, Device* device, CFRunLoopRef runloop) :
-	Relay(env, device, runloop),
-	connection(),
-	relayConn(env, runloop, connection) {}
+SyslogRelay::SyslogRelay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop) :
+	Relay(env, device, runloop) {
+
+	relayConn = std::make_shared<RelayConnection>(env, runloop, (int*)&connection);
+	relayConn->init(new RelayConnectionData(relayConn));
+}
 
 /**
  * Closes the connection handle.
@@ -335,11 +366,11 @@ void SyslogRelay::config(RelayAction action, napi_value listener) {
 		device->usb->startService(AMSVC_SYSLOG_RELAY, &connection);
 
 		LOG_DEBUG("SyslogRelay::config", "Adding listener to syslog relay connection")
-		relayConn.add(listener);
+		relayConn->add(listener);
 
 	} else {
 		LOG_DEBUG("SyslogRelay::config", "Removing listener from syslog relay connection")
-		relayConn.remove(listener);
+		relayConn->remove(listener);
 	}
 }
 

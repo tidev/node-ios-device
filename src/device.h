@@ -23,7 +23,7 @@ class SyslogRelay;
  */
 class Device {
 public:
-	Device(napi_env env, std::string& udid, am_device& dev, CFRunLoopRef runloop);
+	Device(napi_env env, std::string& udid, am_device& dev, std::weak_ptr<CFRunLoopRef> runloop);
 
 	std::shared_ptr<DeviceInterface> changeInterface(am_device& dev, bool isAdd);
 	void install(std::string& appPath);
