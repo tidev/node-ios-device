@@ -6,35 +6,47 @@ const { spawnSync } = require('child_process');
 const appPath = path.resolve(__dirname, 'TestApp', 'build', 'Release-iphoneos', 'TestApp.app');
 
 let udid = null;
+let usbUDID = null;
+let wifiUDID = null;
 let devit = it;
 let appit = it;
-const appCompiled = () => (fs.existsSync(path.join(appPath, 'PkgInfo')) && fs.existsSync(path.join(appPath, 'TestApp')));
 
 try {
 	const devices = iosDevice.list();
 
 	if (!devices.length) {
 		devit = it.skip;
-		console.warn('\nNOTICE: No iOS Devices connected... skipping device tests');
-		throw new Error();
+		throw new Error('NOTICE: No iOS Devices connected... skipping device tests');
 	}
 
-	({ udid } = devices[0]);
-
-	if (!appCompiled()) {
-		const { status, stdout } = spawnSync('xcodebuild', [ 'clean', 'build' ], {
-			cwd: path.resolve(__dirname, 'TestApp')
-		});
-
-		if (status || !/BUILD SUCCEEDED/.test(stdout.toString()) || !appCompiled()) {
-			throw new Error();
+	for (const device of devices) {
+		if (!udid) {
+			udid = device.udid;
+		}
+		if (!usbUDID && device.interfaces.includes('USB')) {
+			usbUDID = device.udid;
+		}
+		if (!wifiUDID && device.interfaces.includes('Wi-Fi') && !device.interfaces.includes('USB')) {
+			wifiUDID = device.udid;
 		}
 	}
+
+	console.log('Building TestApp...')
+	const { status, stdout } = spawnSync('xcodebuild', [ 'clean', 'build' ], {
+		cwd: path.resolve(__dirname, 'TestApp')
+	});
+
+	if (status || !/BUILD SUCCEEDED/.test(stdout.toString())) {
+		throw new Error('Build TestApp failed');
+	}
 } catch (e) {
+	console.warn('\n' + e.toString());
 	appit = it.skip;
 	appit.only = it.only;
 	appit.skip = it.skip;
 }
+
+const wifiit = wifiUDID ? it : it.skip;
 
 describe('devices()', () => {
 	it('should get all connected devices', () => {
@@ -243,12 +255,18 @@ describe('syslog()', () => {
 		}).to.throw(Error, 'Device "foo" not found');
 	});
 
+	wifiit('should error trying to start syslog service on Wi-Fi only device', () => {
+		expect(() => {
+			iosDevice.syslog(wifiUDID);
+		}).to.throw(Error, 'syslog requires a USB connected iOS device');
+	});
+
 	appit('should relay syslog messages', async function () {
 		this.timeout(15000);
 		this.slow(15000);
 
 		let counter = 0;
-		const syslogHandle = iosDevice.syslog(udid);
+		const syslogHandle = iosDevice.syslog(usbUDID);
 		syslogHandle.on('data', msg => counter++);
 
 		await new Promise(resolve => setTimeout(resolve, 2000));
