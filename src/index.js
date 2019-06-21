@@ -122,7 +122,7 @@ api.syslog = function syslog(udid) {
  */
 api.watch = function watch() {
 	const handle = new EventEmitter();
-	const emit = handle.emit.bind(handle, 'change');
+	const emit = handle.emit.bind(handle);
 
 	handle.stop = function stop() {
 		binding.unwatch(emit);
