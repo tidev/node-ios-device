@@ -41,8 +41,9 @@ public:
 	RelayConnection(napi_env env, std::weak_ptr<CFRunLoopRef> runloop, int* fd);
 	virtual ~RelayConnection();
 	void add(napi_value listener);
+	void disconnect();
 	void dispatch();
-	void init(RelayConnectionData* data);
+	void init(WeakPtrWrapper<RelayConnection>* data);
 	void onClose();
 	void onData(const char* data);
 	void remove(napi_value listener);
@@ -50,26 +51,18 @@ public:
 
 protected:
 	void connect();
-	void disconnect();
 
 	int*                        fd;
 	napi_env                    env;
 	std::mutex                  listenersLock;
 	std::list<napi_ref>         listeners;
 	std::weak_ptr<CFRunLoopRef> runloop;
+	CFSocketContext             socketCtx;
 	CFSocketRef                 socket;
 	CFRunLoopSourceRef          source;
 	std::mutex                  msgQueueLock;
 	uv_async_t                  msgQueueUpdate;
 	std::queue<std::shared_ptr<RelayMessage>> msgQueue;
-};
-
-/**
- * A wrapper around a weak pointer so that we can pass the weak pointer to the libuv async handler.
- */
-struct RelayConnectionData {
-	RelayConnectionData(std::weak_ptr<RelayConnection> conn) : conn(conn) {}
-	std::weak_ptr<RelayConnection> conn;
 };
 
 /**

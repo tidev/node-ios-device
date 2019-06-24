@@ -25,7 +25,7 @@ public:
 
 	void config(napi_value listener, WatchAction action);
 	std::shared_ptr<Device> getDevice(std::string& udid);
-	void init();
+	void init(WeakPtrWrapper<DeviceMan>* ptr);
 	napi_value list();
 
 private:
@@ -35,6 +35,7 @@ private:
 	void run();
 	void stopInitTimer();
 
+	WeakPtrWrapper<DeviceMan>* self;
 	napi_env env;
 	uv_async_t notifyChange;
 

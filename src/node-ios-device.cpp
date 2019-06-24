@@ -2,7 +2,7 @@
 #include "deviceman.h"
 
 namespace node_ios_device {
-	DeviceMan* deviceman = NULL;
+	std::shared_ptr<DeviceMan> deviceman = NULL;
 	napi_ref logRef = NULL;
 	LOG_DEBUG_VARS
 }
@@ -112,7 +112,7 @@ NAPI_METHOD(init) {
 	NAPI_THROW_RETURN("init", "ERR_NAPI_CALL_FUNCTION", napi_call_function(env, global, logFn, 2, args, &result), NULL)
 #endif
 
-	deviceman->init();
+	deviceman->init(new WeakPtrWrapper<DeviceMan>(deviceman));
 
 	NAPI_RETURN_UNDEFINED("init")
 }
@@ -221,8 +221,7 @@ NAPI_METHOD(unwatch) {
 static void cleanup(void* arg) {
 	if (deviceman) {
 		LOG_DEBUG("cleanup", "Deleting deviceman")
-		delete deviceman;
-		deviceman = NULL;
+		deviceman.reset();
 	}
 
 #ifndef ENABLE_RAW_DEBUGGING
@@ -251,5 +250,5 @@ NAPI_INIT() {
 
 	NAPI_THROW("napi_init", "ERR_NAPI_ADD_ENV_CLEANUP_HOOK", napi_add_env_cleanup_hook(env, cleanup, env))
 
-	deviceman = new DeviceMan(env);
+	deviceman = std::make_shared<DeviceMan>(env);
 }

@@ -18,7 +18,7 @@ RelayConnection::RelayConnection(napi_env env, std::weak_ptr<CFRunLoopRef> runlo
  * Shuts down a relay connection.
  */
 RelayConnection::~RelayConnection() {
-	delete reinterpret_cast<RelayConnectionData*>(msgQueueUpdate.data);
+	delete reinterpret_cast<WeakPtrWrapper<RelayConnection>*>(msgQueueUpdate.data);
 	::uv_close((uv_handle_t*)&msgQueueUpdate, NULL);
 	disconnect();
 }
@@ -47,14 +47,16 @@ void RelayConnection::add(napi_value listener) {
 /**
  * Dispatches activity from the relay socket back to the relay connection object.
  */
-static void relaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void* data, void* conn) {
+static void relaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void* data, void* connData) {
 	if (type == kCFSocketDataCallBack) {
 		CFDataRef cfdata = (CFDataRef)data;
 		CFIndex size = ::CFDataGetLength(cfdata);
-		if (size > 0) {
-			((RelayConnection*)conn)->onData((const char*)::CFDataGetBytePtr(cfdata));
-		} else {
-			((RelayConnection*)conn)->onClose();
+		if (auto conn = ((WeakPtrWrapper<RelayConnection>*)connData)->pdata.lock()) {
+			if (size > 0) {
+				conn->onData((const char*)::CFDataGetBytePtr(cfdata));
+			} else {
+				conn->onClose();
+			}
 		}
 	}
 }
@@ -63,8 +65,6 @@ static void relaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFData
  * Connects to the specified native socket and wires up the callback.
  */
 void RelayConnection::connect() {
-	CFSocketContext socketCtx = { 0, this, NULL, NULL, NULL };
-
 	LOG_DEBUG_1("RelayConnection::connect", "Creating socket using specified file descriptor %d", *fd)
 	socket = ::CFSocketCreateWithNative(
 		kCFAllocatorDefault,
@@ -140,7 +140,7 @@ void RelayConnection::dispatch() {
 		return;
 	}
 
-	while (socket) {
+	while (1) {
 		std::shared_ptr<RelayMessage> relayMsg;
 
 		{
@@ -155,16 +155,29 @@ void RelayConnection::dispatch() {
 			msgQueue.pop();
 		}
 
+		bool isEnd = strncmp(relayMsg->event, "end", 3) == 0;
+
 		argc = 1;
 		NAPI_THROW("RelayConnection::dispatch", "ERR_NAPI_CREATE_STRING_UTF8", ::napi_create_string_utf8(env, relayMsg->event, NAPI_AUTO_LENGTH, &argv[0]))
 
-		if (strncmp(relayMsg->event, "end", 3) != 0) {
+		if (isEnd) {
+			LOG_DEBUG_1("RelayConnection::dispatch", "Emitting \"%s\" event", relayMsg->event);
+		} else {
 			argc = 2;
 			NAPI_THROW("RelayConnection::dispatch", "ERR_NAPI_CREATE_STRING_UTF8", ::napi_create_string_utf8(env, relayMsg->message.c_str(), NAPI_AUTO_LENGTH, &argv[1]))
 		}
 
 		for (auto const& callback : callbacks) {
 			NAPI_THROW("RelayConnection::dispatch", "ERR_NAPI_MAKE_CALLBACK", ::napi_make_callback(env, NULL, global, callback, argc, argv, &rval))
+
+			if (isEnd) {
+				remove(callback);
+			}
+		}
+
+		if (isEnd) {
+			disconnect();
+			return;
 		}
 	}
 }
@@ -176,13 +189,14 @@ void RelayConnection::dispatch() {
  * to this instance. Note that the shared pointer to this relay connection instance is created when
  * it's inserted into the
  */
-void RelayConnection::init(RelayConnectionData* data) {
+void RelayConnection::init(WeakPtrWrapper<RelayConnection>* ptr) {
+	socketCtx = { 0, ptr, NULL, NULL, NULL };
+
 	uv_loop_t* loop;
 	::napi_get_uv_event_loop(env, &loop);
-	msgQueueUpdate.data = data;
+	msgQueueUpdate.data = ptr;
 	::uv_async_init(loop, &msgQueueUpdate, [](uv_async_t* handle) {
-		RelayConnectionData* data = (RelayConnectionData*)handle->data;
-		if (auto conn = data->conn.lock()) {
+		if (auto conn = ((WeakPtrWrapper<RelayConnection>*)handle->data)->pdata.lock()) {
 			conn->dispatch();
 		}
 	});
@@ -193,7 +207,6 @@ void RelayConnection::init(RelayConnectionData* data) {
  * Creates an "end" message and queues it.
  */
 void RelayConnection::onClose() {
-	disconnect();
 	{
 		std::lock_guard<std::mutex> lock(msgQueueLock);
 		msgQueue.push(std::make_shared<RelayMessage>("end"));
@@ -258,6 +271,7 @@ void RelayConnection::remove(napi_value listener) {
 
 	if (listeners.size() == 0) {
 		::uv_unref((uv_handle_t*)&msgQueueUpdate);
+		disconnect();
 	}
 }
 
@@ -300,12 +314,11 @@ void PortRelay::config(RelayAction action, napi_value nport, napi_value listener
 		if (it == connections.end()) {
 			// port relay connection does not exist, so create it
 
-			std::shared_ptr<DeviceInterface> iface = device->usb ? device->usb : device->wifi ? device->wifi : NULL;
-			if (!iface) {
-				throw std::runtime_error("Device has no USB or Wi-Fi interface");
+			if (!device->usb) {
+				throw std::runtime_error("forward requires a USB connected iOS device");
 			}
 
-			uint32_t id = ::AMDeviceGetConnectionID(iface->dev);
+			uint32_t id = ::AMDeviceGetConnectionID(device->usb->dev);
 			int fd = -1;
 
 			LOG_DEBUG_1("PortRelay::config", "Trying to connect to port %d", port);
@@ -319,7 +332,7 @@ void PortRelay::config(RelayAction action, napi_value nport, napi_value listener
 
 			conn = std::make_shared<RelayConnection>(env, runloop, &fd);
 			connections.insert(std::make_pair(port, conn));
-			conn->init(new RelayConnectionData(conn));
+			conn->init(new WeakPtrWrapper<RelayConnection>(conn));
 		} else {
 			conn = it->second;
 		}
@@ -345,7 +358,7 @@ SyslogRelay::SyslogRelay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRe
 	Relay(env, device, runloop) {
 
 	relayConn = std::make_shared<RelayConnection>(env, runloop, (int*)&connection);
-	relayConn->init(new RelayConnectionData(relayConn));
+	relayConn->init(new WeakPtrWrapper<RelayConnection>(relayConn));
 }
 
 /**

@@ -24,6 +24,15 @@ namespace node_ios_device {
 		std::string ns;
 		std::string msg;
 	};
+
+	/**
+	 * A wrapper around a weak pointer so that we can pass the weak pointer to the libuv async handler.
+	 */
+	template<class T>
+	struct WeakPtrWrapper {
+		WeakPtrWrapper(std::weak_ptr<T> pdata) : pdata(pdata) {}
+		std::weak_ptr<T> pdata;
+	};
 }
 
 #define STRINGIFY(s) STRINGIFY_HELPER(s)
@@ -39,6 +48,12 @@ namespace node_ios_device {
 		return rval; \
 	}
 
+#define NAPI_STATUS_THROWS_RVAL(call, rval) \
+	if ((call) != napi_ok) { \
+		napi_throw_error(env, NULL, #call " failed!"); \
+		return rval; \
+	}
+
 #define NAPI_THROW_RETURN(ns, code, call, rval) \
 	{ \
 		napi_status _status = call; \
@@ -50,8 +65,8 @@ namespace node_ios_device {
 			::snprintf(msg, 1024, "%s: " #call " failed (status=%d) %s", ns, _status, error->error_message); \
 			\
 			napi_value err, errCode, message; \
-			NAPI_STATUS_THROWS(::napi_create_string_utf8(env, code, NAPI_AUTO_LENGTH, &errCode)) \
-			NAPI_STATUS_THROWS(::napi_create_string_utf8(env, msg, ::strlen(msg), &message)) \
+			NAPI_STATUS_THROWS_RVAL(::napi_create_string_utf8(env, code, NAPI_AUTO_LENGTH, &errCode), rval) \
+			NAPI_STATUS_THROWS_RVAL(::napi_create_string_utf8(env, msg, ::strlen(msg), &message), rval) \
 			\
 			::napi_create_error(env, errCode, message, &err); \
 			::napi_throw(env, err); \

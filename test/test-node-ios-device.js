@@ -9,6 +9,8 @@ let udid = null;
 let usbUDID = null;
 let wifiUDID = null;
 let devit = it;
+let usbAppIt = it.skip;
+let wifiAppIt = it.skip;
 let appit = it;
 
 try {
@@ -31,13 +33,15 @@ try {
 		}
 	}
 
-	console.log('Building TestApp...')
-	const { status, stdout } = spawnSync('xcodebuild', [ 'clean', 'build' ], {
-		cwd: path.resolve(__dirname, 'TestApp')
-	});
+	if (!process.argv.includes('--skip-build-testapp')) {
+		console.log('Building TestApp...')
+		const { status, stdout } = spawnSync('xcodebuild', [ 'clean', 'build' ], {
+			cwd: path.resolve(__dirname, 'TestApp')
+		});
 
-	if (status || !/BUILD SUCCEEDED/.test(stdout.toString())) {
-		throw new Error('Build TestApp failed');
+		if (status || !/BUILD SUCCEEDED/.test(stdout.toString())) {
+			throw new Error('Build TestApp failed');
+		}
 	}
 } catch (e) {
 	console.warn('\n' + e.toString());
@@ -46,7 +50,17 @@ try {
 	appit.skip = it.skip;
 }
 
-const wifiit = wifiUDID ? it : it.skip;
+if (wifiUDID) {
+	wifiAppIt = appit;
+	wifiAppIt.only = it.only;
+	wifiAppIt.skip = it.skip;
+}
+
+if (usbUDID) {
+	usbAppIt = appit;
+	usbAppIt.only = it.only;
+	usbAppIt.skip = it.skip;
+}
 
 describe('devices()', () => {
 	it('should get all connected devices', () => {
@@ -197,13 +211,19 @@ describe('forward()', () => {
 		}).to.throw(Error, 'Expected port to be a number between 1 and 65535');
 	});
 
-	devit('should fail if cannot connect to port', () => {
+	wifiAppIt('should error trying to forward on Wi-Fi only device', () => {
+		expect(() => {
+			iosDevice.forward(wifiUDID, 12345);
+		}).to.throw(Error, 'forward requires a USB connected iOS device');
+	});
+
+	usbAppIt('should fail if cannot connect to port', () => {
 		expect(() => {
 			iosDevice.forward(udid, '23456');
 		}).to.throw(Error, 'Failed to connect to port 23456');
 	});
 
-	appit('should forward port messages', function () {
+	usbAppIt('should forward port messages', function () {
 		this.timeout(15000);
 		this.slow(15000);
 
@@ -215,9 +235,10 @@ describe('forward()', () => {
 		console.log('    ************************************************************');
 		console.log('\u001b[0m');
 
+		let timer;
 		const tryForward = () => new Promise((resolve, reject) => {
 			try {
-				const forwardHandle = iosDevice.forward(udid, 12345);
+				const forwardHandle = iosDevice.forward(usbUDID, 12345);
 				let counter = 0;
 				forwardHandle.on('data', msg => {
 					try {
@@ -230,11 +251,17 @@ describe('forward()', () => {
 					}
 				});
 			} catch (e) {
-				setTimeout(() => tryForward().then(resolve, reject), 1000);
+				timer = setTimeout(() => tryForward().then(resolve, reject), 1000);
 			}
 		});
 
-		return tryForward();
+		return Promise.race([
+			tryForward(),
+			new Promise(resolve => setTimeout(() => {
+				clearTimeout(timer);
+				resolve();
+			}, 10000))
+		]);
 	});
 });
 
@@ -255,13 +282,13 @@ describe('syslog()', () => {
 		}).to.throw(Error, 'Device "foo" not found');
 	});
 
-	wifiit('should error trying to start syslog service on Wi-Fi only device', () => {
+	wifiAppIt('should error trying to start syslog service on Wi-Fi only device', () => {
 		expect(() => {
 			iosDevice.syslog(wifiUDID);
 		}).to.throw(Error, 'syslog requires a USB connected iOS device');
 	});
 
-	appit('should relay syslog messages', async function () {
+	usbAppIt('should relay syslog messages', async function () {
 		this.timeout(15000);
 		this.slow(15000);
 
@@ -270,7 +297,6 @@ describe('syslog()', () => {
 		syslogHandle.on('data', msg => counter++);
 
 		await new Promise(resolve => setTimeout(resolve, 2000));
-		expect(counter).to.be.gt(0);
 
 		const count = counter;
 		syslogHandle.stop();

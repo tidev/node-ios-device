@@ -137,12 +137,15 @@ The `appPath` must resolve to an iOS .app, not the .ipa file.
 
 Relays the syslog from the iOS device.
 
-Starting with iOS 10, the syslog no longer contains application specific output. If you want output
-for a specific app, then you will need to use a TCP socket. See [`forward()`](#forwardudid-port) for more info.
+> Starting with iOS 10, the syslog no longer contains application specific output. If you want
+> output for a specific app, then you will need to use a TCP socket. See
+> [`forward()`](#forwardudid-port) for more info.
 
 * `{String} udid` - The device udid
 
 Returns a `Handle` instance that contains a `stop()` method to discontinue emitting messages.
+
+> NOTE: `syslog()` only supports USB connected devices. Wi-Fi-only connected devices will not work.
 
 #### Event: `'data'`
 
@@ -160,7 +163,8 @@ callback. You must manually call `handle.stop()` to cleanup.
 ```js
 const handle = iosDevice
 	.syslog('<device udid>')
-	.on('data', console.log);
+    .on('data', console.log)
+    .on('end', () => console.log('End of syslog'));
 
 setTimeout(function () {
 	// turn off logging after 1 minute
@@ -178,6 +182,8 @@ Relays messages from a server running on the device on the specified port.
 Returns a `Handle` instance that contains a `stop()` method to discontinue
 emitting messages.
 
+> NOTE: `forward()` only supports USB connected devices. Wi-Fi-only connected devices will not work.
+
 #### Event: `'data'`
 
 Emitted for each line of output. Empty lines are omitted.
@@ -194,7 +200,8 @@ callback. You must manually call `handle.stop()` to cleanup.
 ```js
 const handle = iosDevice
 	.forward('<device udid>', 1337)
-	.on('log', console.log);
+    .on('log', console.log)
+    .on('end', () => console.log('End of forward'));
 
 setTimeout(function () {
 	// turn off logging after 1 minute

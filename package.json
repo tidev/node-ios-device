@@ -33,8 +33,8 @@
     "test": "mocha -r chai test/**/test-*.js"
   },
   "dependencies": {
-    "cli-kit": "^0.11.0",
-    "napi-macros": "^1.8.2",
+    "cli-kit": "^0.11.1",
+    "napi-macros": "^2.0.0",
     "node-gyp-build": "^4.1.0",
     "snooplogg": "^2.0.1"
   },
