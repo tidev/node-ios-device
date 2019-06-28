@@ -2,7 +2,8 @@
 #define __RELAY_H__
 
 #include "node-ios-device.h"
-#include "device.h"
+#include "device-interface.h"
+#include "mobiledevice.h"
 #include <CoreFoundation/CoreFoundation.h>
 #include <list>
 #include <map>
@@ -12,10 +13,7 @@
 
 namespace node_ios_device {
 
-enum RelayAction { Start, Stop };
-
-class Device;
-struct RelayConnectionData;
+class DeviceInterface;
 
 /**
  * A message containing an event and relay message. Instances are created on the background thread,
@@ -36,14 +34,17 @@ struct RelayMessage {
  * This class contains the list of relay listeners and handles notifying them when new relay
  * messages come in.
  */
-class RelayConnection {
+class RelayConnection : public std::enable_shared_from_this<RelayConnection> {
 public:
 	RelayConnection(napi_env env, std::weak_ptr<CFRunLoopRef> runloop, int* fd);
 	virtual ~RelayConnection();
+
+	static std::shared_ptr<RelayConnection> create(napi_env env, std::weak_ptr<CFRunLoopRef> runloop, int* fd);
+
 	void add(napi_value listener);
 	void disconnect();
 	void dispatch();
-	void init(WeakPtrWrapper<RelayConnection>* data);
+	void init();
 	void onClose();
 	void onData(const char* data);
 	void remove(napi_value listener);
@@ -52,16 +53,16 @@ public:
 protected:
 	void connect();
 
-	int*                        fd;
-	napi_env                    env;
-	std::mutex                  listenersLock;
-	std::list<napi_ref>         listeners;
-	std::weak_ptr<CFRunLoopRef> runloop;
-	CFSocketContext             socketCtx;
-	CFSocketRef                 socket;
-	CFRunLoopSourceRef          source;
-	std::mutex                  msgQueueLock;
-	uv_async_t                  msgQueueUpdate;
+	std::shared_ptr<RelayConnection> self;
+	int*                             fd;
+	napi_env                         env;
+	std::mutex                       listenersLock;
+	std::list<napi_ref>              listeners;
+	std::weak_ptr<CFRunLoopRef>      runloop;
+	CFSocketRef                      socket;
+	CFRunLoopSourceRef               source;
+	std::mutex                       msgQueueLock;
+	uv_async_t                       msgQueueUpdate;
 	std::queue<std::shared_ptr<RelayMessage>> msgQueue;
 };
 
@@ -70,12 +71,11 @@ protected:
  */
 class Relay {
 public:
-	Relay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop);
+	Relay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop);
 	virtual ~Relay() {};
 
 protected:
 	napi_env     env;
-	Device*      device;
 	std::weak_ptr<CFRunLoopRef> runloop;
 };
 
@@ -87,8 +87,8 @@ protected:
  */
 class PortRelay : public Relay {
 public:
-	PortRelay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop);
-	void config(RelayAction action, napi_value nport, napi_value listener);
+	PortRelay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop);
+	void config(uint8_t action, napi_value nport, napi_value listener, std::weak_ptr<DeviceInterface> ptr);
 
 protected:
 	std::map<uint32_t, std::shared_ptr<RelayConnection>> connections;
@@ -99,9 +99,9 @@ protected:
  */
 class SyslogRelay : public Relay {
 public:
-	SyslogRelay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop);
+	SyslogRelay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop);
 	~SyslogRelay();
-	void config(RelayAction action, napi_value listener);
+	void config(uint8_t action, napi_value listener, std::weak_ptr<DeviceInterface> ptr);
 
 	service_conn_t connection;
 

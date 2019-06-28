@@ -11,15 +11,12 @@ namespace node_ios_device {
  * regardless of the which interface.
  */
 Device::Device(napi_env env, std::string& udid, am_device& dev, std::weak_ptr<CFRunLoopRef> runloop) :
-	usb(NULL),
-	wifi(NULL),
+	portRelay(env, runloop),
+	syslogRelay(env, runloop),
 	env(env),
 	udid(udid) {
 
-	portRelay = std::make_shared<PortRelay>(env, this, runloop);
-	syslogRelay = std::make_shared<SyslogRelay>(env, this, runloop);
-
-	std::shared_ptr<DeviceInterface> iface = changeInterface(dev, true);
+	auto iface = changeInterface(dev, true);
 
 	LOG_DEBUG_1("Device", "Getting device info for %s", udid.c_str());
 	iface->connect();
@@ -39,35 +36,41 @@ Device::Device(napi_env env, std::string& udid, am_device& dev, std::weak_ptr<CF
 /**
  * Adds or removes a device interface.
  */
-std::shared_ptr<DeviceInterface> Device::changeInterface(am_device& dev, bool isAdd) {
+DeviceInterface* Device::changeInterface(am_device& dev, bool isAdd) {
 	uint32_t type = ::AMDeviceGetInterfaceType(dev);
 	if (type == 1) {
 		if (isAdd && !usb) {
 			LOG_DEBUG_1("Device::changeInterface", "Device %s connected via USB", udid.c_str())
 			usb = std::make_shared<DeviceInterface>(udid, dev);
-			return usb;
+			return usb.get();
 		} else if (!isAdd && usb) {
 			LOG_DEBUG_1("Device::changeInterface", "Device %s disconnected via USB", udid.c_str())
-			std::shared_ptr<DeviceInterface> tmp = usb;
-			usb = NULL;
-			return tmp;
+			usb.reset();
 		}
 	} else if (type == 2) {
 		if (isAdd && !wifi) {
 			LOG_DEBUG_1("Device::changeInterface", "Device %s connected via Wi-Fi", udid.c_str())
 			wifi = std::make_shared<DeviceInterface>(udid, dev);
-			return wifi;
+			return wifi.get();
 		} else if (!isAdd && wifi) {
 			LOG_DEBUG_1("Device::removeInterface", "Device %s disconnected via Wi-Fi", udid.c_str())
-			std::shared_ptr<DeviceInterface> tmp = wifi;
-			wifi = NULL;
-			return tmp;
+			wifi.reset();
 		}
 	} else {
 		throw std::runtime_error("Unknown device interface type");
 	}
 
 	return NULL;
+}
+
+/**
+ * Starts or stops port forwarding.
+ */
+void Device::forward(uint8_t action, napi_value nport, napi_value listener) {
+	if (action == RELAY_START && !usb) {
+		throw std::runtime_error("forward requires a USB connected iOS device");
+	}
+	portRelay.config(action, nport, listener, usb);
 }
 
 /**
@@ -83,6 +86,16 @@ void Device::install(std::string& appPath) {
 		error << "No interfaces found for device " << udid;
 		throw std::runtime_error(error.str());
 	}
+}
+
+/**
+ * Starts or stops syslog relaying.
+ */
+void Device::syslog(uint8_t action, napi_value listener) {
+	if (action == RELAY_START && !usb) {
+		throw std::runtime_error("syslog requires a USB connected iOS device");
+	}
+	syslogRelay.config(action, listener, usb);
 }
 
 /**

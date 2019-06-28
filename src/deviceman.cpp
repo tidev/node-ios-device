@@ -7,6 +7,7 @@ namespace node_ios_device {
  */
 DeviceMan::DeviceMan(napi_env env) :
 	env(env),
+	pendingCount(0),
 	initialized(false),
 	initTimer(NULL),
 	runloop(NULL) {}
@@ -15,6 +16,7 @@ DeviceMan::DeviceMan(napi_env env) :
  * Releases the async handle, unsubscribes from iOS device notifications, and stops the runloop.
  */
 DeviceMan::~DeviceMan() {
+	LOG_DEBUG_THREAD_ID("DeviceMan::~DeviceMan", "Shutting down device manager")
 	::uv_close((uv_handle_t*)&notifyChange, NULL);
 	::AMDeviceNotificationUnsubscribe(deviceNotification);
 	stopInitTimer();
@@ -33,6 +35,7 @@ void DeviceMan::config(napi_value listener, WatchAction action) {
 		NAPI_THROW_RETURN("DeviceMan::dispatch", "ERROR_NAPI_CREATE_REFERENCE", ::napi_create_reference(env, listener, 1, &ref), )
 
 		LOG_DEBUG("DeviceMan::config", "Adding listener")
+		printf("DeviceMan::config uv_ref\n");
 		::uv_ref((uv_handle_t*)&notifyChange);
 		{
 			std::lock_guard<std::mutex> lock(listenersLock);
@@ -54,6 +57,7 @@ void DeviceMan::config(napi_value listener, WatchAction action) {
 
 			if (same) {
 				LOG_DEBUG("DeviceMan::config", "Removing listener")
+				printf("DeviceMan::config uv_unref\n");
 				::uv_unref((uv_handle_t*)&notifyChange);
 				it = listeners.erase(it);
 			} else {
@@ -61,6 +65,15 @@ void DeviceMan::config(napi_value listener, WatchAction action) {
 			}
 		}
 	}
+}
+
+/**
+ * Creates an shared pointer to an instance of the device manager.
+ */
+std::shared_ptr<DeviceMan> DeviceMan::create(napi_env env) {
+	auto deviceman = std::make_shared<DeviceMan>(env);
+	deviceman->init();
+	return deviceman;
 }
 
 /**
@@ -73,7 +86,7 @@ void DeviceMan::createInitTimer() {
 	}
 
 	// set a timer for 500ms to unlock the initMutex
-	CFRunLoopTimerContext timerContext = { 0, (void*)this, NULL, NULL, NULL };
+	CFRunLoopTimerContext timerContext = { 0, static_cast<void*>(&self), NULL, NULL, NULL };
 	initTimer = ::CFRunLoopTimerCreate(
 		kCFAllocatorDefault,
 		CFAbsoluteTimeGetCurrent() + 0.5f,
@@ -82,10 +95,10 @@ void DeviceMan::createInitTimer() {
 		0, // order
 		[](CFRunLoopTimerRef timer, void* info) {
 			LOG_DEBUG("DeviceMan::initTimer", "initTimer fired, unlocking init mutex")
-			DeviceMan* runtime = (DeviceMan*)info;
-			runtime->initialized = true;
-			runtime->initMutex.unlock();
-			runtime->stopInitTimer();
+			std::shared_ptr<DeviceMan>* deviceman = static_cast<std::shared_ptr<DeviceMan>*>(info);
+			(*deviceman)->initialized = true;
+			(*deviceman)->initMutex.unlock();
+			(*deviceman)->stopInitTimer();
 		},
 		&timerContext
 	);
@@ -99,6 +112,8 @@ void DeviceMan::createInitTimer() {
  * notification is sent from the background thread.
  */
 void DeviceMan::dispatch() {
+	printf("DeviceMan::dispatch start\n");
+
 	napi_handle_scope scope;
 	napi_value global, argv[2], listener, rval;
 
@@ -119,6 +134,8 @@ void DeviceMan::dispatch() {
 	}
 
 	if (callbacks.empty()) {
+		pendingCount = 0;
+		printf("DeviceMan::dispatch end - no callbacks\n");
 		return;
 	}
 
@@ -128,6 +145,9 @@ void DeviceMan::dispatch() {
 	for (auto const& callback : callbacks) {
 		NAPI_THROW("DeviceMan::dispatch", "ERROR_NAPI_MAKE_CALLBACK", ::napi_make_callback(env, NULL, global, callback, 2, argv, &rval))
 	}
+
+	pendingCount = 0;
+	printf("DeviceMan::dispatch end\n");
 }
 
 /**
@@ -149,19 +169,19 @@ std::shared_ptr<Device> DeviceMan::getDevice(std::string& udid) {
  * immediately unrefs it as to not block Node from quitting. Next spawns the background thread and
  * locking the init mutex. This method is run on the main thread.
  */
-void DeviceMan::init(WeakPtrWrapper<DeviceMan>* ptr) {
-	self = ptr;
+void DeviceMan::init() {
+	self = shared_from_this();
 
 	// wire up our dispatch change handler into Node's event loop, then unref it so that we don't
 	// block Node from exiting
 	uv_loop_t* loop;
 	::napi_get_uv_event_loop(env, &loop);
-	notifyChange.data = ptr;
+	notifyChange.data = &self;
 	::uv_async_init(loop, &notifyChange, [](uv_async_t* handle) {
-		if (auto ptr = ((WeakPtrWrapper<DeviceMan>*)handle->data)->pdata.lock()) {
-			ptr->dispatch();
-		}
+		std::shared_ptr<DeviceMan>* deviceman = static_cast<std::shared_ptr<DeviceMan>*>(handle->data);
+		(*deviceman)->dispatch();
 	});
+	printf("DeviceMan::init uv_unref\n");
 	::uv_unref((uv_handle_t*)&notifyChange);
 
 	LOG_DEBUG_THREAD_ID("DeviceMan::init", "Starting background thread")
@@ -201,7 +221,10 @@ napi_value DeviceMan::list() {
  * The callback when a device notification is received.
  */
 void DeviceMan::onDeviceNotification(am_device_notification_callback_info* info) {
+	printf("DeviceMan::onDeviceNotification start\n");
+
 	if (info->msg != ADNCI_MSG_CONNECTED && info->msg != ADNCI_MSG_DISCONNECTED) {
+		printf("DeviceMan::onDeviceNotification end\n");
 		return;
 	}
 
@@ -227,8 +250,7 @@ void DeviceMan::onDeviceNotification(am_device_notification_callback_info* info)
 		}
 	} else if (info->msg == ADNCI_MSG_CONNECTED) {
 		try {
-			device = std::make_shared<Device>(env, udid, info->dev, runloop);
-			devices.insert(std::make_pair(udid, device));
+			devices.insert(std::make_pair(udid, std::make_shared<Device>(env, udid, info->dev, runloop)));
 			changed = true;
 		} catch (std::exception& e) {
 			LOG_DEBUG_1("DeviceMan::onDeviceNotification", "%s", e.what())
@@ -239,9 +261,16 @@ void DeviceMan::onDeviceNotification(am_device_notification_callback_info* info)
 
 	// we need to notify if devices changed and this must be done outside the
 	// scopes above so that the mutex is unlocked
-	if (changed) {
+	if (++pendingCount == 1 && changed) {
+		printf("DeviceMan::onDeviceNotification uv_async_send\n");
 		::uv_async_send(&notifyChange);
+	} else if (changed) {
+		printf("DeviceMan::onDeviceNotification dispatch pending, skipping\n");
+	} else {
+		printf("DeviceMan::onDeviceNotification no change\n");
 	}
+
+	printf("DeviceMan::onDeviceNotification end\n");
 }
 
 /**
@@ -252,10 +281,9 @@ void DeviceMan::run() {
 
 	LOG_DEBUG("DeviceMan::run", "Subscribing to device notifications")
 	::AMDeviceNotificationSubscribe([](am_device_notification_callback_info* info, void* arg) {
-		if (auto ptr = ((WeakPtrWrapper<DeviceMan>*)arg)->pdata.lock()) {
-			ptr->onDeviceNotification(info);
-		}
-	}, 0, 0, (void*)self, &deviceNotification);
+		std::shared_ptr<DeviceMan>* deviceman = static_cast<std::shared_ptr<DeviceMan>*>(arg);
+		(*deviceman)->onDeviceNotification(info);
+	}, 0, 0, static_cast<void*>(&self), &deviceNotification);
 
 	runloop = std::make_shared<CFRunLoopRef>(::CFRunLoopGetCurrent());
 

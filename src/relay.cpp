@@ -18,7 +18,6 @@ RelayConnection::RelayConnection(napi_env env, std::weak_ptr<CFRunLoopRef> runlo
  * Shuts down a relay connection.
  */
 RelayConnection::~RelayConnection() {
-	delete reinterpret_cast<WeakPtrWrapper<RelayConnection>*>(msgQueueUpdate.data);
 	::uv_close((uv_handle_t*)&msgQueueUpdate, NULL);
 	disconnect();
 }
@@ -51,12 +50,12 @@ static void relaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFData
 	if (type == kCFSocketDataCallBack) {
 		CFDataRef cfdata = (CFDataRef)data;
 		CFIndex size = ::CFDataGetLength(cfdata);
-		if (auto conn = ((WeakPtrWrapper<RelayConnection>*)connData)->pdata.lock()) {
-			if (size > 0) {
-				conn->onData((const char*)::CFDataGetBytePtr(cfdata));
-			} else {
-				conn->onClose();
-			}
+
+		std::shared_ptr<RelayConnection>* conn = static_cast<std::shared_ptr<RelayConnection>*>(connData);
+		if (size > 0) {
+			(*conn)->onData((const char*)::CFDataGetBytePtr(cfdata));
+		} else {
+			(*conn)->onClose();
 		}
 	}
 }
@@ -65,6 +64,8 @@ static void relaySocketCallback(CFSocketRef s, CFSocketCallBackType type, CFData
  * Connects to the specified native socket and wires up the callback.
  */
 void RelayConnection::connect() {
+	CFSocketContext socketCtx = { 0, &self, NULL, NULL, NULL };
+
 	LOG_DEBUG_1("RelayConnection::connect", "Creating socket using specified file descriptor %d", *fd)
 	socket = ::CFSocketCreateWithNative(
 		kCFAllocatorDefault,
@@ -88,6 +89,15 @@ void RelayConnection::connect() {
 	if (auto rl = runloop.lock()) {
 		::CFRunLoopAddSource(*rl, source, kCFRunLoopCommonModes);
 	}
+}
+
+/**
+ * Creates an shared pointer to an instance of the device.
+ */
+std::shared_ptr<RelayConnection> RelayConnection::create(napi_env env, std::weak_ptr<CFRunLoopRef> runloop, int* fd) {
+	std::shared_ptr<RelayConnection> conn = std::make_shared<RelayConnection>(env, runloop, fd);
+	conn->init();
+	return conn;
 }
 
 /**
@@ -183,22 +193,18 @@ void RelayConnection::dispatch() {
 }
 
 /**
- * Wires up the relay message dispatch handler. This must be done in a separate method instead of
- * the constructor because we need to pass the shared pointer to this instance to the async handler
- * and that can't happen until the instance is created and an existing shared pointer is pointing
- * to this instance. Note that the shared pointer to this relay connection instance is created when
- * it's inserted into the
+ * Explicit initialization so that we can get a weak pointer based on the shared pointer that
+ * created this instance and wire up the libuv callback.
  */
-void RelayConnection::init(WeakPtrWrapper<RelayConnection>* ptr) {
-	socketCtx = { 0, ptr, NULL, NULL, NULL };
+void RelayConnection::init() {
+	self = shared_from_this();
 
 	uv_loop_t* loop;
 	::napi_get_uv_event_loop(env, &loop);
-	msgQueueUpdate.data = ptr;
+	msgQueueUpdate.data = &self;
 	::uv_async_init(loop, &msgQueueUpdate, [](uv_async_t* handle) {
-		if (auto conn = ((WeakPtrWrapper<RelayConnection>*)handle->data)->pdata.lock()) {
-			conn->dispatch();
-		}
+		std::shared_ptr<RelayConnection>* conn = static_cast<std::shared_ptr<RelayConnection>*>(handle->data);
+		(*conn)->dispatch();
 	});
 	::uv_unref((uv_handle_t*)&msgQueueUpdate);
 }
@@ -286,21 +292,20 @@ uint32_t RelayConnection::size() {
 /**
  * Initializes the base relay instance.
  */
-Relay::Relay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop) :
+Relay::Relay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop) :
 	env(env),
-	device(device),
 	runloop(runloop) {}
 
 /**
  * Intializes a port relay instance along with its base class.
  */
-PortRelay::PortRelay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop) :
-	Relay(env, device, runloop) {}
+PortRelay::PortRelay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop) :
+	Relay(env, runloop) {}
 
 /**
  * Adds or removes a listener to the specified port's relay connection.
  */
-void PortRelay::config(RelayAction action, napi_value nport, napi_value listener) {
+void PortRelay::config(uint8_t action, napi_value nport, napi_value listener, std::weak_ptr<DeviceInterface> ptr) {
 	uint32_t port = 0;
 	napi_status status = ::napi_get_value_uint32(env, nport, &port);
 	if (status == napi_number_expected || status != napi_ok || port < 1 || port > 65535) {
@@ -310,15 +315,16 @@ void PortRelay::config(RelayAction action, napi_value nport, napi_value listener
 	std::shared_ptr<RelayConnection> conn;
 	auto it = connections.find(port);
 
-	if (action == Start) {
+	if (action == RELAY_START) {
 		if (it == connections.end()) {
 			// port relay connection does not exist, so create it
 
-			if (!device->usb) {
-				throw std::runtime_error("forward requires a USB connected iOS device");
+			auto iface = ptr.lock();
+			if (!iface) {
+				return;
 			}
 
-			uint32_t id = ::AMDeviceGetConnectionID(device->usb->dev);
+			uint32_t id = ::AMDeviceGetConnectionID(iface->dev);
 			int fd = -1;
 
 			LOG_DEBUG_1("PortRelay::config", "Trying to connect to port %d", port);
@@ -330,9 +336,7 @@ void PortRelay::config(RelayAction action, napi_value nport, napi_value listener
 			}
 			LOG_DEBUG("PortRelay::config", "Connected");
 
-			conn = std::make_shared<RelayConnection>(env, runloop, &fd);
-			connections.insert(std::make_pair(port, conn));
-			conn->init(new WeakPtrWrapper<RelayConnection>(conn));
+			connections.insert(std::make_pair(port, RelayConnection::create(env, runloop, &fd)));
 		} else {
 			conn = it->second;
 		}
@@ -354,11 +358,10 @@ void PortRelay::config(RelayAction action, napi_value nport, napi_value listener
 /**
  * Intializes a syslog relay instance along with its base class.
  */
-SyslogRelay::SyslogRelay(napi_env env, Device* device, std::weak_ptr<CFRunLoopRef> runloop) :
-	Relay(env, device, runloop) {
+SyslogRelay::SyslogRelay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop) :
+	Relay(env, runloop) {
 
-	relayConn = std::make_shared<RelayConnection>(env, runloop, (int*)&connection);
-	relayConn->init(new WeakPtrWrapper<RelayConnection>(relayConn));
+	relayConn = RelayConnection::create(env, runloop, (int*)&connection);
 }
 
 /**
@@ -371,12 +374,14 @@ SyslogRelay::~SyslogRelay() {
 /**
  * Adds or removes a listener to the syslog relay connection.
  */
-void SyslogRelay::config(RelayAction action, napi_value listener) {
-	if (action == Start) {
-		if (!device->usb) {
-			throw std::runtime_error("syslog requires a USB connected iOS device");
+void SyslogRelay::config(uint8_t action, napi_value listener, std::weak_ptr<DeviceInterface> ptr) {
+	if (action == RELAY_START) {
+		auto iface = ptr.lock();
+		if (!iface) {
+			return;
 		}
-		device->usb->startService(AMSVC_SYSLOG_RELAY, &connection);
+
+		iface->startService(AMSVC_SYSLOG_RELAY, &connection);
 
 		LOG_DEBUG("SyslogRelay::config", "Adding listener to syslog relay connection")
 		relayConn->add(listener);

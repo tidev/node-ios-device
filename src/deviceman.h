@@ -18,14 +18,16 @@ enum WatchAction { Watch, Unwatch };
 /**
  * Device Manager that tracks connected devices.
  */
-class DeviceMan {
+class DeviceMan : public std::enable_shared_from_this<DeviceMan> {
 public:
 	DeviceMan(napi_env env);
-	~DeviceMan();
+	virtual ~DeviceMan();
+
+	static std::shared_ptr<DeviceMan> create(napi_env env);
 
 	void config(napi_value listener, WatchAction action);
 	std::shared_ptr<Device> getDevice(std::string& udid);
-	void init(WeakPtrWrapper<DeviceMan>* ptr);
+	void init();
 	napi_value list();
 
 private:
@@ -35,9 +37,11 @@ private:
 	void run();
 	void stopInitTimer();
 
-	WeakPtrWrapper<DeviceMan>* self;
+	std::shared_ptr<DeviceMan> self;
+
 	napi_env env;
 	uv_async_t notifyChange;
+	uint32_t pendingCount;
 
 	std::mutex deviceMutex;
 	std::map<std::string, std::shared_ptr<Device>> devices;

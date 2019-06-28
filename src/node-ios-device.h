@@ -2,7 +2,7 @@
 #define __NODE_IOS_DEVICE_H__
 
 // enable the following line to bypass the message queue and print the raw debug log messages to stdout
-// #define ENABLE_RAW_DEBUGGING
+#define ENABLE_RAW_DEBUGGING
 
 #define NAPI_VERSION 3
 
@@ -24,16 +24,10 @@ namespace node_ios_device {
 		std::string ns;
 		std::string msg;
 	};
-
-	/**
-	 * A wrapper around a weak pointer so that we can pass the weak pointer to the libuv async handler.
-	 */
-	template<class T>
-	struct WeakPtrWrapper {
-		WeakPtrWrapper(std::weak_ptr<T> pdata) : pdata(pdata) {}
-		std::weak_ptr<T> pdata;
-	};
 }
+
+#define RELAY_START 0
+#define RELAY_STOP 1
 
 #define STRINGIFY(s) STRINGIFY_HELPER(s)
 #define STRINGIFY_HELPER(s) #s

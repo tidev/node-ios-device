@@ -112,8 +112,6 @@ NAPI_METHOD(init) {
 	NAPI_THROW_RETURN("init", "ERR_NAPI_CALL_FUNCTION", napi_call_function(env, global, logFn, 2, args, &result), NULL)
 #endif
 
-	deviceman->init(new WeakPtrWrapper<DeviceMan>(deviceman));
-
 	NAPI_RETURN_UNDEFINED("init")
 }
 
@@ -187,11 +185,11 @@ NAPI_METHOD(list) {
  * forward() and syslog()
  * All of the logic is performed in the device's relay object.
  */
-CREATE_LOG_METHOD(startForward, 3, "ERR_FORWARD_START", device->portRelay->config(Start, argv[1], argv[2]))
-CREATE_LOG_METHOD(stopForward,  3, "ERR_FORWARD_STOP",  device->portRelay->config(Stop, argv[1], argv[2]))
+CREATE_LOG_METHOD(startForward, 3, "ERR_FORWARD_START", device->forward(RELAY_START, argv[1], argv[2]))
+CREATE_LOG_METHOD(stopForward,  3, "ERR_FORWARD_STOP",  device->forward(RELAY_STOP, argv[1], argv[2]))
 
-CREATE_LOG_METHOD(startSyslog,  2, "ERR_SYSLOG_START",  device->syslogRelay->config(Start, argv[1]))
-CREATE_LOG_METHOD(stopSyslog,   2, "ERR_SYSLOG_STOP",   device->syslogRelay->config(Stop, argv[1]))
+CREATE_LOG_METHOD(startSyslog,  2, "ERR_SYSLOG_START",  device->syslog(RELAY_START, argv[1]))
+CREATE_LOG_METHOD(stopSyslog,   2, "ERR_SYSLOG_STOP",   device->syslog(RELAY_STOP, argv[1]))
 
 /**
  * watch()
@@ -219,12 +217,15 @@ NAPI_METHOD(unwatch) {
  * Destroys the Watchman instance and closes open handles.
  */
 static void cleanup(void* arg) {
+	LOG_DEBUG("cleanup", "CLEANING UP")
+
 	if (deviceman) {
 		LOG_DEBUG("cleanup", "Deleting deviceman")
 		deviceman.reset();
 	}
 
 #ifndef ENABLE_RAW_DEBUGGING
+	printf("cleanup uv_close\n");
 	uv_close((uv_handle_t*)&logNotify, NULL);
 
 	if (logRef) {
@@ -250,5 +251,5 @@ NAPI_INIT() {
 
 	NAPI_THROW("napi_init", "ERR_NAPI_ADD_ENV_CLEANUP_HOOK", napi_add_env_cleanup_hook(env, cleanup, env))
 
-	deviceman = std::make_shared<DeviceMan>(env);
+	deviceman = DeviceMan::create(env);
 }
