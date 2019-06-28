@@ -197,7 +197,7 @@ describe('forward()', () => {
 		}).to.throw(Error, 'Device "foo" not found');
 	});
 
-	devit('should fail if port is invalid', () => {
+	usbAppIt('should fail if port is invalid', () => {
 		expect(() => {
 			iosDevice.forward(udid);
 		}).to.throw(Error, 'Expected port to be a number between 1 and 65535');

@@ -7,7 +7,6 @@ namespace node_ios_device {
  */
 DeviceMan::DeviceMan(napi_env env) :
 	env(env),
-	pendingCount(0),
 	initialized(false),
 	initTimer(NULL),
 	runloop(NULL) {}
@@ -35,7 +34,6 @@ void DeviceMan::config(napi_value listener, WatchAction action) {
 		NAPI_THROW_RETURN("DeviceMan::dispatch", "ERROR_NAPI_CREATE_REFERENCE", ::napi_create_reference(env, listener, 1, &ref), )
 
 		LOG_DEBUG("DeviceMan::config", "Adding listener")
-		printf("DeviceMan::config uv_ref\n");
 		::uv_ref((uv_handle_t*)&notifyChange);
 		{
 			std::lock_guard<std::mutex> lock(listenersLock);
@@ -57,7 +55,6 @@ void DeviceMan::config(napi_value listener, WatchAction action) {
 
 			if (same) {
 				LOG_DEBUG("DeviceMan::config", "Removing listener")
-				printf("DeviceMan::config uv_unref\n");
 				::uv_unref((uv_handle_t*)&notifyChange);
 				it = listeners.erase(it);
 			} else {
@@ -112,8 +109,6 @@ void DeviceMan::createInitTimer() {
  * notification is sent from the background thread.
  */
 void DeviceMan::dispatch() {
-	printf("DeviceMan::dispatch start\n");
-
 	napi_handle_scope scope;
 	napi_value global, argv[2], listener, rval;
 
@@ -134,8 +129,6 @@ void DeviceMan::dispatch() {
 	}
 
 	if (callbacks.empty()) {
-		pendingCount = 0;
-		printf("DeviceMan::dispatch end - no callbacks\n");
 		return;
 	}
 
@@ -145,9 +138,6 @@ void DeviceMan::dispatch() {
 	for (auto const& callback : callbacks) {
 		NAPI_THROW("DeviceMan::dispatch", "ERROR_NAPI_MAKE_CALLBACK", ::napi_make_callback(env, NULL, global, callback, 2, argv, &rval))
 	}
-
-	pendingCount = 0;
-	printf("DeviceMan::dispatch end\n");
 }
 
 /**
@@ -181,7 +171,6 @@ void DeviceMan::init() {
 		std::shared_ptr<DeviceMan>* deviceman = static_cast<std::shared_ptr<DeviceMan>*>(handle->data);
 		(*deviceman)->dispatch();
 	});
-	printf("DeviceMan::init uv_unref\n");
 	::uv_unref((uv_handle_t*)&notifyChange);
 
 	LOG_DEBUG_THREAD_ID("DeviceMan::init", "Starting background thread")
@@ -221,10 +210,7 @@ napi_value DeviceMan::list() {
  * The callback when a device notification is received.
  */
 void DeviceMan::onDeviceNotification(am_device_notification_callback_info* info) {
-	printf("DeviceMan::onDeviceNotification start\n");
-
 	if (info->msg != ADNCI_MSG_CONNECTED && info->msg != ADNCI_MSG_DISCONNECTED) {
-		printf("DeviceMan::onDeviceNotification end\n");
 		return;
 	}
 
@@ -261,16 +247,9 @@ void DeviceMan::onDeviceNotification(am_device_notification_callback_info* info)
 
 	// we need to notify if devices changed and this must be done outside the
 	// scopes above so that the mutex is unlocked
-	if (++pendingCount == 1 && changed) {
-		printf("DeviceMan::onDeviceNotification uv_async_send\n");
+	if (changed) {
 		::uv_async_send(&notifyChange);
-	} else if (changed) {
-		printf("DeviceMan::onDeviceNotification dispatch pending, skipping\n");
-	} else {
-		printf("DeviceMan::onDeviceNotification no change\n");
 	}
-
-	printf("DeviceMan::onDeviceNotification end\n");
 }
 
 /**

@@ -41,7 +41,6 @@ private:
 
 	napi_env env;
 	uv_async_t notifyChange;
-	uint32_t pendingCount;
 
 	std::mutex deviceMutex;
 	std::map<std::string, std::shared_ptr<Device>> devices;

@@ -68,7 +68,7 @@ DeviceInterface* Device::changeInterface(am_device& dev, bool isAdd) {
  */
 void Device::forward(uint8_t action, napi_value nport, napi_value listener) {
 	if (action == RELAY_START && !usb) {
-		throw std::runtime_error("forward requires a USB connected iOS device");
+		throw std::runtime_error("Port forward requires a USB connected iOS device");
 	}
 	portRelay.config(action, nport, listener, usb);
 }

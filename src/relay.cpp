@@ -305,7 +305,7 @@ PortRelay::PortRelay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop) :
 /**
  * Adds or removes a listener to the specified port's relay connection.
  */
-void PortRelay::config(uint8_t action, napi_value nport, napi_value listener, std::weak_ptr<DeviceInterface> ptr) {
+void PortRelay::config(uint8_t action, napi_value nport, napi_value listener, std::shared_ptr<DeviceInterface> iface) {
 	uint32_t port = 0;
 	napi_status status = ::napi_get_value_uint32(env, nport, &port);
 	if (status == napi_number_expected || status != napi_ok || port < 1 || port > 65535) {
@@ -318,12 +318,6 @@ void PortRelay::config(uint8_t action, napi_value nport, napi_value listener, st
 	if (action == RELAY_START) {
 		if (it == connections.end()) {
 			// port relay connection does not exist, so create it
-
-			auto iface = ptr.lock();
-			if (!iface) {
-				return;
-			}
-
 			uint32_t id = ::AMDeviceGetConnectionID(iface->dev);
 			int fd = -1;
 
@@ -336,7 +330,8 @@ void PortRelay::config(uint8_t action, napi_value nport, napi_value listener, st
 			}
 			LOG_DEBUG("PortRelay::config", "Connected");
 
-			connections.insert(std::make_pair(port, RelayConnection::create(env, runloop, &fd)));
+			conn = RelayConnection::create(env, runloop, &fd);
+			connections.insert(std::make_pair(port, conn));
 		} else {
 			conn = it->second;
 		}
@@ -374,13 +369,8 @@ SyslogRelay::~SyslogRelay() {
 /**
  * Adds or removes a listener to the syslog relay connection.
  */
-void SyslogRelay::config(uint8_t action, napi_value listener, std::weak_ptr<DeviceInterface> ptr) {
+void SyslogRelay::config(uint8_t action, napi_value listener, std::shared_ptr<DeviceInterface> iface) {
 	if (action == RELAY_START) {
-		auto iface = ptr.lock();
-		if (!iface) {
-			return;
-		}
-
 		iface->startService(AMSVC_SYSLOG_RELAY, &connection);
 
 		LOG_DEBUG("SyslogRelay::config", "Adding listener to syslog relay connection")

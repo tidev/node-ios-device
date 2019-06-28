@@ -217,15 +217,12 @@ NAPI_METHOD(unwatch) {
  * Destroys the Watchman instance and closes open handles.
  */
 static void cleanup(void* arg) {
-	LOG_DEBUG("cleanup", "CLEANING UP")
-
 	if (deviceman) {
 		LOG_DEBUG("cleanup", "Deleting deviceman")
 		deviceman.reset();
 	}
 
 #ifndef ENABLE_RAW_DEBUGGING
-	printf("cleanup uv_close\n");
 	uv_close((uv_handle_t*)&logNotify, NULL);
 
 	if (logRef) {

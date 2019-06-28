@@ -88,7 +88,7 @@ protected:
 class PortRelay : public Relay {
 public:
 	PortRelay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop);
-	void config(uint8_t action, napi_value nport, napi_value listener, std::weak_ptr<DeviceInterface> ptr);
+	void config(uint8_t action, napi_value nport, napi_value listener, std::shared_ptr<DeviceInterface> iface);
 
 protected:
 	std::map<uint32_t, std::shared_ptr<RelayConnection>> connections;
@@ -101,7 +101,7 @@ class SyslogRelay : public Relay {
 public:
 	SyslogRelay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop);
 	~SyslogRelay();
-	void config(uint8_t action, napi_value listener, std::weak_ptr<DeviceInterface> ptr);
+	void config(uint8_t action, napi_value listener, std::shared_ptr<DeviceInterface> iface);
 
 	service_conn_t connection;
 
