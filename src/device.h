@@ -26,7 +26,7 @@ public:
 	Device(napi_env env, std::string& udid, am_device& dev, std::weak_ptr<CFRunLoopRef> runloop);
 	virtual ~Device() {}
 
-	DeviceInterface* changeInterface(am_device& dev, bool isAdd);
+	DeviceInterface* config(am_device& dev, bool isAdd);
 	void forward(uint8_t action, napi_value nport, napi_value listener);
 	void install(std::string& appPath);
 	inline bool isDisconnected() const { return !usb && !wifi; }

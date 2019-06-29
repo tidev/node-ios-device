@@ -41,9 +41,7 @@ api.forward = function forward(udid, port) {
 	const emit = handle.emit.bind(handle);
 	port = ~~port;
 
-	handle.stop = function stop() {
-		binding.stopForward(udid, port, emit);
-	};
+	handle.stop = () => binding.stopForward(udid, port, emit);
 	binding.startForward(udid, port, emit);
 
 	return handle;
@@ -106,9 +104,7 @@ api.syslog = function syslog(udid) {
 	const handle = new EventEmitter();
 	const emit = handle.emit.bind(handle);
 
-	handle.stop = function stop() {
-		binding.stopSyslog(udid, emit);
-	};
+	handle.stop = () => binding.stopSyslog(udid, emit);
 	binding.startSyslog(udid, emit);
 
 	return handle;
@@ -124,10 +120,8 @@ api.watch = function watch() {
 	const handle = new EventEmitter();
 	const emit = handle.emit.bind(handle);
 
-	handle.stop = function stop() {
-		binding.unwatch(emit);
-	};
-	binding.watch(emit);
+	handle.stop = () => binding.unwatch(emit);
+	setImmediate(() => binding.watch(emit));
 
 	return handle;
 };

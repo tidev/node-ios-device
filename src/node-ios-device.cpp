@@ -86,16 +86,9 @@ void dispatchLog(uv_async_t* handle) {
 NAPI_METHOD(init) {
 #ifndef ENABLE_RAW_DEBUGGING
 	NAPI_ARGV(1);
-	napi_value logFn = argv[0];
-
-	// wire up the log notification handler
-	uv_loop_t* loop;
-	napi_get_uv_event_loop(env, &loop);
-	logNotify.data = env;
-	uv_async_init(loop, &logNotify, &dispatchLog);
-	uv_unref((uv_handle_t*)&logNotify);
 
 	// create the reference for the emit log callback so it doesn't get GC'd
+	napi_value logFn = argv[0];
 	NAPI_THROW_RETURN("init", "ERR_NAPI_CREATE_REFERENCE", napi_create_reference(env, logFn, 1, &logRef), NULL)
 
 	// print the banner
@@ -144,7 +137,7 @@ NAPI_METHOD(install) {
 		device->install(appPath);
 	} catch (std::exception& e) {
 		const char* msg = e.what();
-		LOG_DEBUG_1("DeviceMan::install", "%s", msg)
+		LOG_DEBUG_1("install", "%s", msg)
 		NAPI_THROW_ERROR("ERR_INSTALL", msg, ::strlen(msg), NULL)
 	}
 
@@ -210,7 +203,7 @@ NAPI_METHOD(unwatch) {
 	NAPI_ARGV(1);
 	deviceman->config(argv[0], node_ios_device::Unwatch);
 	flushLog(env);
-	NAPI_RETURN_UNDEFINED("watch")
+	NAPI_RETURN_UNDEFINED("unwatch")
 }
 
 /**
@@ -236,6 +229,15 @@ static void cleanup(void* arg) {
  * Wire up the public API and cleanup handler and creates the Watchman instance.
  */
 NAPI_INIT() {
+#ifndef ENABLE_RAW_DEBUGGING
+	// wire up the log notification handler
+	uv_loop_t* loop;
+	napi_get_uv_event_loop(env, &loop);
+	logNotify.data = env;
+	uv_async_init(loop, &logNotify, &dispatchLog);
+	uv_unref((uv_handle_t*)&logNotify);
+#endif
+
 	NAPI_EXPORT_FUNCTION(init);
 	NAPI_EXPORT_FUNCTION(install);
 	NAPI_EXPORT_FUNCTION(list);

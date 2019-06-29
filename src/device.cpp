@@ -16,7 +16,7 @@ Device::Device(napi_env env, std::string& udid, am_device& dev, std::weak_ptr<CF
 	env(env),
 	udid(udid) {
 
-	auto iface = changeInterface(dev, true);
+	auto iface = config(dev, true);
 
 	LOG_DEBUG_1("Device", "Getting device info for %s", udid.c_str());
 	iface->connect();
@@ -36,25 +36,25 @@ Device::Device(napi_env env, std::string& udid, am_device& dev, std::weak_ptr<CF
 /**
  * Adds or removes a device interface.
  */
-DeviceInterface* Device::changeInterface(am_device& dev, bool isAdd) {
+DeviceInterface* Device::config(am_device& dev, bool isAdd) {
 	uint32_t type = ::AMDeviceGetInterfaceType(dev);
 	if (type == 1) {
 		if (isAdd && !usb) {
-			LOG_DEBUG_1("Device::changeInterface", "Device %s connected via USB", udid.c_str())
+			LOG_DEBUG_1("Device::config", "Device %s connected via USB", udid.c_str())
 			usb = std::make_shared<DeviceInterface>(udid, dev);
 			return usb.get();
 		} else if (!isAdd && usb) {
-			LOG_DEBUG_1("Device::changeInterface", "Device %s disconnected via USB", udid.c_str())
-			usb.reset();
+			LOG_DEBUG_1("Device::config", "Device %s disconnected via USB", udid.c_str())
+			usb = nullptr;
 		}
 	} else if (type == 2) {
 		if (isAdd && !wifi) {
-			LOG_DEBUG_1("Device::changeInterface", "Device %s connected via Wi-Fi", udid.c_str())
+			LOG_DEBUG_1("Device::config", "Device %s connected via Wi-Fi", udid.c_str())
 			wifi = std::make_shared<DeviceInterface>(udid, dev);
 			return wifi.get();
 		} else if (!isAdd && wifi) {
-			LOG_DEBUG_1("Device::removeInterface", "Device %s disconnected via Wi-Fi", udid.c_str())
-			wifi.reset();
+			LOG_DEBUG_1("Device::config", "Device %s disconnected via Wi-Fi", udid.c_str())
+			wifi = nullptr;
 		}
 	} else {
 		throw std::runtime_error("Unknown device interface type");

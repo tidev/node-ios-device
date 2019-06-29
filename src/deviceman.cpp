@@ -31,7 +31,7 @@ DeviceMan::~DeviceMan() {
 void DeviceMan::config(napi_value listener, WatchAction action) {
 	if (action == Watch) {
 		napi_ref ref;
-		NAPI_THROW_RETURN("DeviceMan::dispatch", "ERROR_NAPI_CREATE_REFERENCE", ::napi_create_reference(env, listener, 1, &ref), )
+		NAPI_THROW("DeviceMan::config", "ERROR_NAPI_CREATE_REFERENCE", ::napi_create_reference(env, listener, 1, &ref))
 
 		LOG_DEBUG("DeviceMan::config", "Adding listener")
 		::uv_ref((uv_handle_t*)&notifyChange);
@@ -41,9 +41,13 @@ void DeviceMan::config(napi_value listener, WatchAction action) {
 		}
 
 		// immediately fire the callback
-		napi_value global, rval, devices = list();
-		NAPI_THROW_RETURN("DeviceMan::dispatch", "ERR_NAPI_GET_GLOBAL", ::napi_get_global(env, &global), )
-		NAPI_THROW_RETURN("DeviceMan::dispatch", "ERROR_NAPI_MAKE_CALLBACK", ::napi_make_callback(env, NULL, global, listener, 1, &devices, &rval), )
+		napi_value global, argv[2], rval;
+
+		NAPI_THROW("DeviceMan::config", "ERR_NAPI_GET_GLOBAL", ::napi_get_global(env, &global))
+		NAPI_THROW("DeviceMan::config", "ERR_NAPI_CREATE_STRING", ::napi_create_string_utf8(env, "change", NAPI_AUTO_LENGTH, &argv[0]))
+		argv[1] = list();
+
+		NAPI_THROW("DeviceMan::config", "ERROR_NAPI_MAKE_CALLBACK", ::napi_make_callback(env, NULL, global, listener, 2, argv, &rval))
 	} else {
 		std::lock_guard<std::mutex> lock(listenersLock);
 		for (auto it = listeners.begin(); it != listeners.end(); ) {
@@ -91,7 +95,7 @@ void DeviceMan::createInitTimer() {
 		0, // flags
 		0, // order
 		[](CFRunLoopTimerRef timer, void* info) {
-			LOG_DEBUG("DeviceMan::initTimer", "initTimer fired, unlocking init mutex")
+			LOG_DEBUG("DeviceMan::createInitTimer", "initTimer fired, unlocking init mutex")
 			std::shared_ptr<DeviceMan>* deviceman = static_cast<std::shared_ptr<DeviceMan>*>(info);
 			(*deviceman)->initialized = true;
 			(*deviceman)->initMutex.unlock();
@@ -112,9 +116,9 @@ void DeviceMan::dispatch() {
 	napi_handle_scope scope;
 	napi_value global, argv[2], listener, rval;
 
-	NAPI_THROW_RETURN("DeviceMan::dispatch", "ERR_NAPI_OPEN_HANDLE_SCOPE", ::napi_open_handle_scope(env, &scope), )
-	NAPI_THROW_RETURN("DeviceMan::dispatch", "ERR_NAPI_GET_GLOBAL", ::napi_get_global(env, &global), )
-	NAPI_THROW_RETURN("DeviceMan::dispatch", "ERR_NAPI_CREATE_STRING", ::napi_create_string_utf8(env, "change", NAPI_AUTO_LENGTH, &argv[0]), )
+	NAPI_THROW("DeviceMan::dispatch", "ERR_NAPI_OPEN_HANDLE_SCOPE", ::napi_open_handle_scope(env, &scope))
+	NAPI_THROW("DeviceMan::dispatch", "ERR_NAPI_GET_GLOBAL", ::napi_get_global(env, &global))
+	NAPI_THROW("DeviceMan::dispatch", "ERR_NAPI_CREATE_STRING", ::napi_create_string_utf8(env, "change", NAPI_AUTO_LENGTH, &argv[0]))
 	argv[1] = list();
 
 	std::list<napi_value> callbacks;
@@ -198,6 +202,7 @@ napi_value DeviceMan::list() {
 	NAPI_THROW_RETURN("list", "ERR_NAPI_GET_NAMED_PROPERTY", ::napi_get_named_property(env, rval, "push", &push), NULL)
 
 	std::lock_guard<std::mutex> lock(deviceMutex);
+	LOG_DEBUG_1("DeviceMan::list", "Creating device list with %ld devices", devices.size())
 	for (auto const& it : devices) {
 		napi_value device = it.second->toJS();
 		NAPI_THROW_RETURN("list", "ERR_NAPI_CALL_FUNCTION", ::napi_call_function(env, rval, push, 1, &device, NULL), NULL)
@@ -227,9 +232,9 @@ void DeviceMan::onDeviceNotification(am_device_notification_callback_info* info)
 
 	if (device) {
 		if (info->msg == ADNCI_MSG_CONNECTED) {
-			changed = device->changeInterface(info->dev, true) != NULL;
+			changed = device->config(info->dev, true) != NULL;
 		} else if (info->msg == ADNCI_MSG_DISCONNECTED) {
-			changed = device->changeInterface(info->dev, false) != NULL;
+			changed = device->config(info->dev, false) == NULL;
 			if (device->isDisconnected()) {
 				devices.erase(udid);
 			}

@@ -22,7 +22,7 @@ DeviceInterface::~DeviceInterface() {
  */
 void DeviceInterface::connect() {
 		if (numConnections > 0) {
-		LOG_DEBUG("Device::connect", "Already connected")
+		LOG_DEBUG("DeviceInterface::connect", "Already connected")
 		return;
 	}
 
@@ -34,7 +34,7 @@ void DeviceInterface::connect() {
 
 	try {
 		// connect to the device
-		LOG_DEBUG_1("Device::connect", "Connecting to device: %s", udid.c_str())
+		LOG_DEBUG_1("DeviceInterface::connect", "Connecting to device: %s", udid.c_str())
 		mach_error_t rval = ::AMDeviceConnect(dev);
 		if (rval == MDERR_SYSCALL) {
 			throw std::runtime_error("Failed to connect to device: setsockopt() failed");
@@ -49,13 +49,13 @@ void DeviceInterface::connect() {
 		}
 
 		// if we're not paired, go ahead and pair now
-		LOG_DEBUG_1("Device::connect", "Pairing device: %s", udid.c_str())
+		LOG_DEBUG_1("DeviceInterface::connect", "Pairing device: %s", udid.c_str())
 		if (::AMDeviceIsPaired(dev) != 1 && ::AMDevicePair(dev) != 1) {
 			throw std::runtime_error("Failed to pair device");
 		}
 
 		// double check the pairing
-		LOG_DEBUG("Device::connect", "Validating device pairing");
+		LOG_DEBUG("DeviceInterface::connect", "Validating device pairing");
 		rval = ::AMDeviceValidatePairing(dev);
 		if (rval == MDERR_INVALID_ARGUMENT) {
 			throw std::runtime_error("Device is not paired: the device is null");
@@ -68,7 +68,7 @@ void DeviceInterface::connect() {
 		}
 
 		// start the session
-		LOG_DEBUG_1("Device::connect", "Starting session: %s", udid.c_str())
+		LOG_DEBUG_1("DeviceInterface::connect", "Starting session: %s", udid.c_str())
 		rval = ::AMDeviceStartSession(dev);
 		if (rval == MDERR_INVALID_ARGUMENT) {
 			throw std::runtime_error("Failed to start session: the lockdown connection has not been established");
@@ -94,9 +94,9 @@ void DeviceInterface::connect() {
 void DeviceInterface::disconnect(const bool force) {
 	if (dev && numConnections > 0) {
 		if (force || numConnections == 1) {
-			LOG_DEBUG_1("Device::disconnect", "Stopping session: %s", udid.c_str())
+			LOG_DEBUG_1("DeviceInterface::disconnect", "Stopping session: %s", udid.c_str())
 			::AMDeviceStopSession(dev);
-			LOG_DEBUG_1("Device::disconnect", "Disconnecting from device: %s", udid.c_str())
+			LOG_DEBUG_1("DeviceInterface::disconnect", "Disconnecting from device: %s", udid.c_str())
 			::AMDeviceDisconnect(dev);
 			numConnections = 0;
 		} else {
@@ -129,7 +129,7 @@ void DeviceInterface::install(std::string& appPath) {
 
 	connect();
 
-	LOG_DEBUG_1("Device::install", "Transferring app to device: %s", udid.c_str())
+	LOG_DEBUG_1("DeviceInterface::install", "Transferring app to device: %s", udid.c_str())
 	mach_error_t rval = ::AMDeviceSecureTransferPath(0, dev, localUrl, options, NULL, 0);
 	if (rval != MDERR_OK) {
 		::CFRelease(options);
@@ -144,7 +144,7 @@ void DeviceInterface::install(std::string& appPath) {
 	}
 
 	// install package on device
-	LOG_DEBUG_1("Device::install", "Installing app on device: %s", udid.c_str());
+	LOG_DEBUG_1("DeviceInterface::install", "Installing app on device: %s", udid.c_str());
 	rval = ::AMDeviceSecureInstallApplication(0, dev, localUrl, options, NULL, 0);
 	::CFRelease(options);
 	::CFRelease(localUrl);

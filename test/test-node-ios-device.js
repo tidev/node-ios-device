@@ -128,8 +128,9 @@ describe('watch()', () => {
 					expect(devices).to.be.an('array');
 					resolve();
 				} catch (e) {
-					handle.stop();
 					reject(e);
+				} finally {
+					handle.stop();
 				}
 			})
 		});
