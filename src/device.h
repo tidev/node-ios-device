@@ -9,7 +9,6 @@
 #include <list>
 #include <map>
 #include <string>
-#include <variant>
 
 namespace node_ios_device {
 
@@ -25,15 +24,12 @@ enum DevicePropType { Boolean, String };
  */
 class DeviceProp {
 public:
-	DeviceProp(std::string val) : type(String) {
-		value = val;
-	}
-	DeviceProp(bool val) : type(Boolean) {
-		value = val;
-	}
+	DeviceProp(bool val) : type(Boolean), bval(val) {}
+	DeviceProp(std::string val) : type(String), sval(val) {}
 
 	DevicePropType type;
-	std::variant<bool, std::string> value;
+	bool bval;
+	std::string sval;
 };
 
 /**

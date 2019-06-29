@@ -4,7 +4,7 @@ Queries connected iOS devices, installs apps, and relays log output.
 
 ## Prerequisites
 
-`node-ios-device` only works on macOS 10.14 or newer and requires N-API version 3 and the following
+`node-ios-device` only works on macOS 10.11 or newer and requires N-API version 3 and the following
 Node.js versions:
 
  * Node.js

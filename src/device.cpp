@@ -152,9 +152,9 @@ napi_value Device::toJS() {
 	for (auto const& it : props) {
 		napi_value tmp;
 		if (it.second->type == Boolean) {
-			NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_GET_BOOLEAN", ::napi_get_boolean(env, std::get<bool>(it.second->value), &tmp), NULL)
+			NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_GET_BOOLEAN", ::napi_get_boolean(env, it.second->bval, &tmp), NULL)
 		} else if (it.second->type == String) {
-			NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_CREATE_STRING", ::napi_create_string_utf8(env, std::get<std::string>(it.second->value).c_str(), NAPI_AUTO_LENGTH, &tmp), NULL)
+			NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_CREATE_STRING", ::napi_create_string_utf8(env, it.second->sval.c_str(), NAPI_AUTO_LENGTH, &tmp), NULL)
 		} else {
 			continue;
 		}
