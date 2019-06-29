@@ -81,7 +81,8 @@ describe('devices()', () => {
 				'modelNumber',
 				'productType',
 				'productVersion',
-				'serialNumber'
+				'serialNumber',
+				'trustedHostAttached'
 			]);
 			expect(device.udid).to.be.a('string');
 			expect(device.udid).to.have.lengthOf(40);
@@ -106,6 +107,8 @@ describe('devices()', () => {
 			expect(device.productVersion).to.not.equal('');
 			expect(device.serialNumber).to.be.a('string');
 			expect(device.serialNumber).to.not.equal('');
+			expect(device.trustedHostAttached).to.be.a('boolean');
+			expect(device.trustedHostAttached).to.equal(true);
 		}
 	});
 });

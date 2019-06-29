@@ -24,7 +24,8 @@ public:
 
 	void connect();
 	void disconnect(const bool force = false);
-	std::string getProp(CFStringRef key);
+	bool getBoolean(CFStringRef key);
+	std::string getString(CFStringRef key);
 	void install(std::string& appPath);
 	void startService(const char* serviceName, service_conn_t* connection);
 

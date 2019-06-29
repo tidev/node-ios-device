@@ -20,16 +20,35 @@ Device::Device(napi_env env, std::string& udid, am_device& dev, std::weak_ptr<CF
 
 	LOG_DEBUG_1("Device", "Getting device info for %s", udid.c_str());
 	iface->connect();
-	props["name"]            = iface->getProp(CFSTR("DeviceName"));
-	props["buildVersion"]    = iface->getProp(CFSTR("BuildVersion"));
-	props["cpuArchitecture"] = iface->getProp(CFSTR("CPUArchitecture"));
-	props["deviceClass"]     = iface->getProp(CFSTR("DeviceClass"));
-	props["deviceColor"]     = iface->getProp(CFSTR("DeviceColor"));
-	props["hardwareModel"]   = iface->getProp(CFSTR("HardwareModel"));
-	props["modelNumber"]     = iface->getProp(CFSTR("ModelNumber"));
-	props["productType"]     = iface->getProp(CFSTR("ProductType"));
-	props["productVersion"]  = iface->getProp(CFSTR("ProductVersion"));
-	props["serialNumber"]    = iface->getProp(CFSTR("SerialNumber"));
+
+	props["name"]            = std::make_unique<DeviceProp>(iface->getString(CFSTR("DeviceName")));
+	props["buildVersion"]    = std::make_unique<DeviceProp>(iface->getString(CFSTR("BuildVersion")));
+	props["cpuArchitecture"] = std::make_unique<DeviceProp>(iface->getString(CFSTR("CPUArchitecture")));
+	props["deviceClass"]     = std::make_unique<DeviceProp>(iface->getString(CFSTR("DeviceClass")));
+
+	std::string deviceColor = iface->getString(CFSTR("DeviceColor"));
+	if (deviceColor == "0") {
+		deviceColor = "White";
+	} else if (deviceColor == "1") {
+		deviceColor = "Black";
+	} else if (deviceColor == "2") {
+		deviceColor = "Silver";
+	} else if (deviceColor == "3") {
+		deviceColor = "Gold";
+	} else if (deviceColor == "4") {
+		deviceColor = "Rose Gold";
+	} else if (deviceColor == "5") {
+		deviceColor = "Jet Black";
+	}
+	props["deviceColor"] = std::make_unique<DeviceProp>(deviceColor);
+
+	props["hardwareModel"]       = std::make_unique<DeviceProp>(iface->getString(CFSTR("HardwareModel")));
+	props["modelNumber"]         = std::make_unique<DeviceProp>(iface->getString(CFSTR("ModelNumber")));
+	props["productType"]         = std::make_unique<DeviceProp>(iface->getString(CFSTR("ProductType")));
+	props["productVersion"]      = std::make_unique<DeviceProp>(iface->getString(CFSTR("ProductVersion")));
+	props["serialNumber"]        = std::make_unique<DeviceProp>(iface->getString(CFSTR("SerialNumber")));
+	props["trustedHostAttached"] = std::make_unique<DeviceProp>(iface->getBoolean(CFSTR("TrustedHostAttached")));
+
 	iface->disconnect();
 }
 
@@ -106,16 +125,11 @@ napi_value Device::toJS() {
 
 	NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_CREATE_OBJECT", ::napi_create_object(env, &obj), NULL)
 
-	#define SET_OBJECT_PROPERTY(key, value) \
-		{ \
-			napi_value tmp; \
-			NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_CREATE_STRING", ::napi_create_string_utf8(env, value.c_str(), NAPI_AUTO_LENGTH, &tmp), NULL) \
-			NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_SET_NAMED_PROPERTY", ::napi_set_named_property(env, obj, key, tmp), NULL) \
-		}
-
-	#define COPY_OBJECT_PROPERTY(key) SET_OBJECT_PROPERTY(key, props[key])
-
-	SET_OBJECT_PROPERTY("udid", udid)
+	{
+		napi_value tmp;
+		NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_CREATE_STRING", ::napi_create_string_utf8(env, udid.c_str(), NAPI_AUTO_LENGTH, &tmp), NULL)
+		NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_SET_NAMED_PROPERTY", ::napi_set_named_property(env, obj, "udid", tmp), NULL)
+	}
 
 	{
 		napi_value ifaces, push, type;
@@ -135,32 +149,17 @@ napi_value Device::toJS() {
 		NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_SET_NAMED_PROPERTY", ::napi_set_named_property(env, obj, "interfaces", ifaces), NULL)
 	}
 
-	COPY_OBJECT_PROPERTY("name")
-	COPY_OBJECT_PROPERTY("buildVersion")
-	COPY_OBJECT_PROPERTY("cpuArchitecture")
-	COPY_OBJECT_PROPERTY("deviceClass")
-
-	std::string deviceColor = props["deviceColor"];
-	if (deviceColor == "0") {
-		deviceColor = "White";
-	} else if (deviceColor == "1") {
-		deviceColor = "Black";
-	} else if (deviceColor == "2") {
-		deviceColor = "Silver";
-	} else if (deviceColor == "3") {
-		deviceColor = "Gold";
-	} else if (deviceColor == "4") {
-		deviceColor = "Rose Gold";
-	} else if (deviceColor == "5") {
-		deviceColor = "Jet Black";
+	for (auto const& it : props) {
+		napi_value tmp;
+		if (it.second->type == Boolean) {
+			NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_GET_BOOLEAN", ::napi_get_boolean(env, std::get<bool>(it.second->value), &tmp), NULL)
+		} else if (it.second->type == String) {
+			NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_CREATE_STRING", ::napi_create_string_utf8(env, std::get<std::string>(it.second->value).c_str(), NAPI_AUTO_LENGTH, &tmp), NULL)
+		} else {
+			continue;
+		}
+		NAPI_THROW_RETURN("Device::toJS", "ERR_NAPI_SET_NAMED_PROPERTY", ::napi_set_named_property(env, obj, it.first, tmp), NULL)
 	}
-	SET_OBJECT_PROPERTY("deviceColor", deviceColor)
-
-	COPY_OBJECT_PROPERTY("hardwareModel")
-	COPY_OBJECT_PROPERTY("modelNumber")
-	COPY_OBJECT_PROPERTY("productType")
-	COPY_OBJECT_PROPERTY("productVersion")
-	COPY_OBJECT_PROPERTY("serialNumber")
 
 	return obj;
 }

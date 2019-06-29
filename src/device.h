@@ -9,6 +9,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <variant>
 
 namespace node_ios_device {
 
@@ -16,6 +17,24 @@ LOG_DEBUG_EXTERN_VARS
 
 class PortRelay;
 class SyslogRelay;
+
+enum DevicePropType { Boolean, String };
+
+/**
+ * A variant wrapper for a device property.
+ */
+class DeviceProp {
+public:
+	DeviceProp(std::string val) : type(String) {
+		value = val;
+	}
+	DeviceProp(bool val) : type(Boolean) {
+		value = val;
+	}
+
+	DevicePropType type;
+	std::variant<bool, std::string> value;
+};
 
 /**
  * Contains info for a connected device as well as the interfaces (USB/Wi-Fi) and the relays.
@@ -41,7 +60,7 @@ private:
 	SyslogRelay syslogRelay;
 	napi_env    env;
 	std::string udid;
-	std::map<const char*, std::string> props;
+	std::map<const char*, std::unique_ptr<DeviceProp>> props;
 };
 
 }

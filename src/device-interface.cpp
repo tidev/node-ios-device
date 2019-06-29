@@ -106,9 +106,17 @@ void DeviceInterface::disconnect(const bool force) {
 }
 
 /**
- * Retrieves a property from the device and copies it into a string that we can work with.
+ * Retrieves a boolean property from the device and converts it to a bool.
  */
-std::string DeviceInterface::getProp(CFStringRef key) {
+bool DeviceInterface::getBoolean(CFStringRef key) {
+	CFBooleanRef value = (CFBooleanRef)::AMDeviceCopyValue(dev, 0, key);
+	return value == kCFBooleanTrue;
+}
+
+/**
+ * Retrieves a string property from the device and copies it into a string that we can work with.
+ */
+std::string DeviceInterface::getString(CFStringRef key) {
 	CFStringRef value = (CFStringRef)::AMDeviceCopyValue(dev, 0, key);
 	return value ? std::string(::CFStringGetCStringPtr(value, kCFStringEncodingUTF8)) : "";
 }
