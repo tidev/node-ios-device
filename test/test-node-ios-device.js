@@ -108,7 +108,6 @@ describe('devices()', () => {
 			expect(device.serialNumber).to.be.a('string');
 			expect(device.serialNumber).to.not.equal('');
 			expect(device.trustedHostAttached).to.be.a('boolean');
-			expect(device.trustedHostAttached).to.equal(true);
 		}
 	});
 });

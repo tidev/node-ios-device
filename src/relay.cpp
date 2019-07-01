@@ -203,8 +203,10 @@ void RelayConnection::init() {
 	::napi_get_uv_event_loop(env, &loop);
 	msgQueueUpdate.data = &self;
 	::uv_async_init(loop, &msgQueueUpdate, [](uv_async_t* handle) {
-		std::shared_ptr<RelayConnection>* conn = static_cast<std::shared_ptr<RelayConnection>*>(handle->data);
-		(*conn)->dispatch();
+		std::weak_ptr<RelayConnection>* ptr = static_cast<std::weak_ptr<RelayConnection>*>(handle->data);
+		if (auto conn = (*ptr).lock()) {
+			conn->dispatch();
+		}
 	});
 	::uv_unref((uv_handle_t*)&msgQueueUpdate);
 }

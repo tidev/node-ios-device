@@ -53,16 +53,16 @@ public:
 protected:
 	void connect();
 
-	std::shared_ptr<RelayConnection> self;
-	int*                             fd;
-	napi_env                         env;
-	std::mutex                       listenersLock;
-	std::list<napi_ref>              listeners;
-	std::weak_ptr<CFRunLoopRef>      runloop;
-	CFSocketRef                      socket;
-	CFRunLoopSourceRef               source;
-	std::mutex                       msgQueueLock;
-	uv_async_t                       msgQueueUpdate;
+	std::weak_ptr<RelayConnection> self;
+	int*                           fd;
+	napi_env                       env;
+	std::mutex                     listenersLock;
+	std::list<napi_ref>            listeners;
+	std::weak_ptr<CFRunLoopRef>    runloop;
+	CFSocketRef                    socket;
+	CFRunLoopSourceRef             source;
+	std::mutex                     msgQueueLock;
+	uv_async_t                     msgQueueUpdate;
 	std::queue<std::shared_ptr<RelayMessage>> msgQueue;
 };
 
@@ -100,7 +100,7 @@ protected:
 class SyslogRelay : public Relay {
 public:
 	SyslogRelay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop);
-	~SyslogRelay();
+	virtual ~SyslogRelay();
 	void config(uint8_t action, napi_value listener, std::shared_ptr<DeviceInterface> iface);
 
 	service_conn_t connection;
