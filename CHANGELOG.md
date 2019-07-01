@@ -1,4 +1,4 @@
-# v2.0.0
+# v2.0.0 (Jul 1, 2019)
 
  * BREAKING CHANGE: Dropped support for Node.js 8.11 and older.
  * BREAKING CHANGE: Completely new API:
