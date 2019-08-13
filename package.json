@@ -32,6 +32,7 @@
     "rebuild-debug": "node-gyp -j 16 rebuild --debug",
     "test": "mocha -r chai test/**/test-*.js"
   },
+  "bin": "./bin/node-ios-device",
   "dependencies": {
     "cli-kit": "^0.11.1",
     "napi-macros": "^2.0.0",
