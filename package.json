@@ -1,6 +1,6 @@
 {
   "name": "node-ios-device",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Simple library for detecting and installing apps on iOS devices",
   "main": "./src/index",
   "gypfile": true,
@@ -20,6 +20,7 @@
     "device",
     "devices"
   ],
+  "bin": "./bin/node-ios-device",
   "scripts": {
     "install": "node -e \"process.platform === 'darwin' && require('node-gyp-build/bin.js')\"",
     "prepublishOnly": "npm run prebuild && npm run prebuild-ia32",
@@ -33,15 +34,15 @@
     "test": "mocha -r chai test/**/test-*.js"
   },
   "dependencies": {
-    "cli-kit": "^0.11.1",
+    "cli-kit": "^0.11.2",
     "napi-macros": "^2.0.0",
     "node-gyp-build": "^4.1.0",
-    "snooplogg": "^2.0.1"
+    "snooplogg": "^2.1.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "mocha": "^6.1.4",
-    "prebuildify": "^3.0.1"
+    "mocha": "^6.2.0",
+    "prebuildify": "^3.0.4"
   },
   "homepage": "https://github.com/appcelerator/node-ios-device",
   "bugs": "https://github.com/appcelerator/node-ios-device/issues",

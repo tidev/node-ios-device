@@ -1,3 +1,8 @@
+# v2.0.1 (Aug 14, 2019)
+
+ * feat: Registered `node-ios-device` bin in the `package.json`.
+ * chore: Updated dependencies.
+
 # v2.0.0 (Jul 1, 2019)
 
  * BREAKING CHANGE: Dropped support for Node.js 8.11 and older.
