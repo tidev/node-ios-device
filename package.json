@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "Simple library for listing and installing apps on iOS devices",
-  "version": "1.6.3",
+  "version": "1.7.0",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
@@ -28,16 +28,16 @@
     "devices"
   ],
   "dependencies": {
-    "debug": "^4.1.0",
-    "nan": "^2.11.1",
-    "node-pre-gyp": "^0.12.0",
+    "debug": "^4.1.1",
+    "nan": "^2.14.0",
+    "node-pre-gyp": "^0.13.0",
     "node-pre-gyp-init": "^1.1.0"
   },
   "bundledDependencies": [
     "node-pre-gyp"
   ],
   "devDependencies": {
-    "aws-sdk": "^2.366.0"
+    "aws-sdk": "^2.537.0"
   },
   "scripts": {
     "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
@@ -58,12 +58,13 @@
       "0.10.48": 11,
       "4.9.1": 46,
       "5.12.0": 47,
-      "6.14.2": 48,
+      "6.17.1": 48,
       "7.10.1": 51,
-      "8.14.0": 57,
+      "8.16.1": 57,
       "9.11.2": 59,
-      "10.14.0": 64,
-      "11.3.0": 67
+      "10.16.3": 64,
+      "11.15.0": 67,
+      "12.11.0": 72
     }
   },
   "license": "Apache-2.0",
