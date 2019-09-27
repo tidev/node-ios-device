@@ -1,6 +1,6 @@
 /**
  * node-ios-device
- * Copyright (c) 2013-2016 by Appcelerator, Inc. All Rights Reserved.
+ * Copyright (c) 2013-2019 by Appcelerator, Inc. All Rights Reserved.
  * Licensed under the terms of the Apache Public License
  * Please see the LICENSE included with this distribution for details.
  */
@@ -24,7 +24,7 @@
 	if (!info[idx]->IsString()) { \
 		return Nan::ThrowError(Exception::Error(Nan::New("Expected \'" name "\' argument to be a string").ToLocalChecked())); \
 	} \
-	v8::Handle<v8::String> var = v8::Handle<v8::String>::Cast(info[idx]); \
+	v8::Local<v8::String> var = v8::Local<v8::String>::Cast(info[idx]); \
 	if (var->Length() == 0) { \
 		return Nan::ThrowError(Exception::Error(Nan::New("The \'" name "\' must not be an empty string").ToLocalChecked())); \
 	}
@@ -41,7 +41,7 @@
 #define VALIDATE_UDID_AND_GET_DEVICE(idx) \
 	VALIDATE_STRING_ARG("udid", udidHandle, idx) \
 	\
-	v8::String::Utf8Value udidValue(udidHandle->ToString()); \
+	Nan::Utf8String udidValue(udidHandle); \
 	node_ios_device::Device* device = getDevice(*udidValue); \
 	\
 	flushMessageQueue(); \
@@ -55,7 +55,7 @@
 #define VALIDATE_PORT(var, idx) \
 	uint32_t var = 0; \
 	if (info.Length() > idx && info[idx]->IsNumber()) { \
-		var = info[idx]->Uint32Value(); \
+		var = Nan::To<uint32_t>(info[idx]).FromJust(); \
 		if (var < 1 || var > 65535) { \
 			return Nan::ThrowError(Exception::Error(Nan::New("Port must be a number between 1 and 65535").ToLocalChecked())); \
 		} \
@@ -92,7 +92,8 @@ static NAUV_WORK_CB(messageQueueCallback) {
 
 	// check that emitter exists
 	if (!ee.IsEmpty()) {
-		v8::Local<v8::Function> emit = v8::Local<v8::Function>::Cast(ee->Get(Nan::New("emit").ToLocalChecked()));
+		v8::Local<v8::Value> emitFn = Nan::Get(ee, Nan::New("emit").ToLocalChecked()).ToLocalChecked();
+		v8::Local<v8::Function> emit = v8::Local<v8::Function>::Cast(emitFn);
 		v8::Local<v8::Value> args[2];
 		node_ios_device::Message* msg;
 		std::queue<node_ios_device::Message*> q;
@@ -113,7 +114,7 @@ static NAUV_WORK_CB(messageQueueCallback) {
 			args[0] = Nan::New(msg->event.c_str()).ToLocalChecked();
 			args[1] = Nan::New(msg->data.c_str()).ToLocalChecked();
 			delete msg;
-			emit->Call(ee, 2, args);
+			Nan::Call(emit, ee, 2, args);
 		}
 	}
 }
@@ -222,7 +223,7 @@ NAN_METHOD(devices) {
 
 	// fire the callback
 	v8::Local<v8::Value> args[] = { Nan::Null(), result };
-	callback->Call(Nan::GetCurrentContext()->Global(), 2, args);
+	Nan::Call(callback, Nan::GetCurrentContext()->Global(), 2, args);
 
 	info.GetReturnValue().SetUndefined();
 }
@@ -235,7 +236,7 @@ NAN_METHOD(installApp) {
 	VALIDATE_UDID_AND_GET_DEVICE(0)
 
 	VALIDATE_STRING_ARG("appPath", appPathHandle, 1)
-	String::Utf8Value appPathValue(appPathHandle->ToString());
+	Nan::Utf8String appPathValue(appPathHandle);
 
 	// check the file exists
 	if (::access(*appPathValue, F_OK) != 0) {
@@ -257,7 +258,7 @@ NAN_METHOD(installApp) {
 	flushMessageQueue();
 
 	// fire the callback
-	callback->Call(Nan::GetCurrentContext()->Global(), 0, NULL);
+	Nan::Call(callback, Nan::GetCurrentContext()->Global(), 0, NULL);
 
 	info.GetReturnValue().SetUndefined();
 }
@@ -342,17 +343,17 @@ NAN_METHOD(shutdown) {
  * Wire up the JavaScript functions, initialize the dictionaries, and subscribe
  * to the device notifications.
  */
-static void init(Handle<Object> exports) {
+NAN_MODULE_INIT(init) {
 	startAsyncHandler();
 
-	exports->Set(Nan::New("initialize").ToLocalChecked(),    Nan::New<FunctionTemplate>(initialize)->GetFunction());
-	exports->Set(Nan::New("resume").ToLocalChecked(),        Nan::New<FunctionTemplate>(resume)->GetFunction());
-	exports->Set(Nan::New("suspend").ToLocalChecked(),       Nan::New<FunctionTemplate>(suspend)->GetFunction());
-	exports->Set(Nan::New("shutdown").ToLocalChecked(),      Nan::New<FunctionTemplate>(shutdown)->GetFunction());
-	exports->Set(Nan::New("devices").ToLocalChecked(),       Nan::New<FunctionTemplate>(devices)->GetFunction());
-	exports->Set(Nan::New("installApp").ToLocalChecked(),    Nan::New<FunctionTemplate>(installApp)->GetFunction());
-	exports->Set(Nan::New("startLogRelay").ToLocalChecked(), Nan::New<FunctionTemplate>(startLogRelay)->GetFunction());
-	exports->Set(Nan::New("stopLogRelay").ToLocalChecked(),  Nan::New<FunctionTemplate>(stopLogRelay)->GetFunction());
+	Nan::Set(target, Nan::New("initialize").ToLocalChecked(),    Nan::GetFunction(Nan::New<FunctionTemplate>(initialize)).ToLocalChecked());
+	Nan::Set(target, Nan::New("resume").ToLocalChecked(),        Nan::GetFunction(Nan::New<FunctionTemplate>(resume)).ToLocalChecked());
+	Nan::Set(target, Nan::New("suspend").ToLocalChecked(),       Nan::GetFunction(Nan::New<FunctionTemplate>(suspend)).ToLocalChecked());
+	Nan::Set(target, Nan::New("shutdown").ToLocalChecked(),      Nan::GetFunction(Nan::New<FunctionTemplate>(shutdown)).ToLocalChecked());
+	Nan::Set(target, Nan::New("devices").ToLocalChecked(),       Nan::GetFunction(Nan::New<FunctionTemplate>(devices)).ToLocalChecked());
+	Nan::Set(target, Nan::New("installApp").ToLocalChecked(),    Nan::GetFunction(Nan::New<FunctionTemplate>(installApp)).ToLocalChecked());
+	Nan::Set(target, Nan::New("startLogRelay").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(startLogRelay)).ToLocalChecked());
+	Nan::Set(target, Nan::New("stopLogRelay").ToLocalChecked(),  Nan::GetFunction(Nan::New<FunctionTemplate>(stopLogRelay)).ToLocalChecked());
 
 	node::AtExit(cleanup);
 }
