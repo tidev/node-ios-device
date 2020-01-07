@@ -26,7 +26,9 @@
 						'MobileDevice.framework'
 					],
 					'mac_framework_dirs': [
-						'<(module_root_dir)/build'
+						'<(module_root_dir)/build',
+						'/System/Library/PrivateFrameworks',
+						'/Library/Apple/System/Library/PrivateFrameworks'
 					],
 					'include_dirs': [
 						'<!(node -e "require(\'napi-macros\')")'
@@ -39,14 +41,6 @@
 					],
 					'cflags_cc!': [
 						'-fno-exceptions'
-					],
-					'actions': [
-						{
-							'action_name': 'copy_mobiledevice',
-							'inputs': [ '/System/Library/PrivateFrameworks/MobileDevice.framework' ],
-							'outputs': [ '<(module_root_dir)/build/MobileDevice.framework' ],
-							'action': [ 'cp', '-R', '<@(_inputs)', '<@(_outputs)' ]
-						}
 					],
 					'xcode_settings': {
 						'OTHER_CPLUSPLUSFLAGS' : [ '-std=c++17', '-stdlib=libc++' ],
