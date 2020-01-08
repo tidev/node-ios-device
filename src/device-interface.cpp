@@ -118,7 +118,19 @@ bool DeviceInterface::getBoolean(CFStringRef key) {
  */
 std::string DeviceInterface::getString(CFStringRef key) {
 	CFStringRef value = (CFStringRef)::AMDeviceCopyValue(dev, 0, key);
-	return value ? std::string(::CFStringGetCStringPtr(value, kCFStringEncodingUTF8)) : "";
+	CFIndex length = ::CFStringGetLength(value);
+	CFIndex maxSize = ::CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
+	std::string str;
+	char* buffer = new char[maxSize];
+
+	if (::CFStringGetCString(value, buffer, maxSize, kCFStringEncodingUTF8)) {
+		str = buffer;
+	}
+
+	::CFRelease(value);
+	delete[] buffer;
+
+	return str;
 }
 
 /**

@@ -42,11 +42,6 @@
 					'cflags_cc!': [
 						'-fno-exceptions'
 					],
-					'variables': {
-						'build_v8_with_gn': 'false',
-						'v8_enable_pointer_compression': 'false',
-						'v8_enable_31bit_smis_on_64bit_arch': 'false'
-					},
 					'xcode_settings': {
 						'OTHER_CPLUSPLUSFLAGS' : [ '-std=c++17', '-stdlib=libc++' ],
 						'OTHER_LDFLAGS': [ '-stdlib=libc++' ],

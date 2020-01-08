@@ -1,3 +1,9 @@
+# v2.0.2 (Jan 8, 2020)
+
+ * fix: Fixed segfault when copying device value.
+ * build: Added support for building on macOS Catalina.
+ * chore: Updated dependencies.
+
 # v2.0.1 (Aug 14, 2019)
 
  * feat: Registered `node-ios-device` bin in the `package.json`.

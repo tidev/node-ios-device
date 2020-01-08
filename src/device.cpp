@@ -18,7 +18,7 @@ Device::Device(napi_env env, std::string& udid, am_device& dev, std::weak_ptr<CF
 
 	auto iface = config(dev, true);
 
-	LOG_DEBUG_1("Device", "Getting device info for %s", udid.c_str());
+	LOG_DEBUG_1("Device", "Getting device info for %s", udid.c_str())
 	iface->connect();
 
 	props["name"]            = std::make_unique<DeviceProp>(iface->getString(CFSTR("DeviceName")));
