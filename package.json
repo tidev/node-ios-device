@@ -31,7 +31,7 @@
     "clean": "node-gyp clean",
     "rebuild": "node-gyp -j 16 rebuild",
     "rebuild-debug": "node-gyp -j 16 rebuild --debug",
-    "test": "mocha -r chai test/**/test-*.js"
+    "test": "JUNIT_REPORT_PATH=junit.xml mocha -r chai --reporter mocha-jenkins-reporter test/**/test-*.js"
   },
   "dependencies": {
     "cli-kit": "^0.13.0",
@@ -42,6 +42,7 @@
   "devDependencies": {
     "chai": "^4.2.0",
     "mocha": "^7.0.0",
+    "mocha-jenkins-reporter": "^0.4.2",
     "prebuildify": "^3.0.4"
   },
   "homepage": "https://github.com/appcelerator/node-ios-device",
