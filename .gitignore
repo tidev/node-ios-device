@@ -10,6 +10,7 @@ node_modules
 npm-debug.log*
 /prebuilds
 test/TestApp/build/
+test/TestApp/DerivedData/
 xcuserdata/
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj

@@ -1,11 +1,9 @@
 #! groovy
-/*
 library 'pipeline-library'
 
-buildNPMPackage {
-  labels = 'osx && git && npm-publish && xcode-9'
-  downstream = ['../appc-cli']
-  projectKey = 'TIMOB'
-  npmVersion = '1.7.0' // this is actually the yarn version to use, could be set to 'latest' instead of explicit version too
+runNPMPackage {
+  nodeVersions = [ '10.19.0', '12.16.1', '13.11.0' ]
+  platformsWithLabels = [
+    'osx': 'xcode-9'
+  ]
 }
-*/
