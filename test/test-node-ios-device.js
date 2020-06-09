@@ -85,7 +85,7 @@ describe('devices()', () => {
 				'trustedHostAttached'
 			]);
 			expect(device.udid).to.be.a('string');
-			expect(device.udid).to.have.lengthOf(40);
+			expect(device.udid).to.not.equal('');
 			expect(device.interfaces).to.be.an('array');
 			expect([ 'USB', 'Wi-Fi' ]).to.include.any.members(device.interfaces);
 			expect(device.name).to.be.a('string');

@@ -1,3 +1,8 @@
+# v2.1.0 (Jun 9, 2020)
+
+ * feat: Added Electron compatibility.
+ * chore: Updated dependencies.
+
 # v2.0.2 (Jan 8, 2020)
 
  * fix: Fixed segfault when copying device value.
