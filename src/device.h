@@ -15,7 +15,6 @@ namespace node_ios_device {
 LOG_DEBUG_EXTERN_VARS
 
 class PortRelay;
-class SyslogRelay;
 
 enum DevicePropType { Boolean, String };
 
@@ -44,7 +43,6 @@ public:
 	void forward(uint8_t action, napi_value nport, napi_value listener);
 	void install(std::string& appPath);
 	inline bool isDisconnected() const { return !usb && !wifi; }
-	void syslog(uint8_t action, napi_value listener);
 	napi_value toJS();
 
 	std::shared_ptr<DeviceInterface> usb;
@@ -52,7 +50,6 @@ public:
 
 private:
 	PortRelay   portRelay;
-	SyslogRelay syslogRelay;
 	napi_env    env;
 	std::string udid;
 	std::map<const char*, std::unique_ptr<DeviceProp>> props;

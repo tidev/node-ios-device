@@ -21,19 +21,19 @@ void flushLog(napi_env env) {
 	napi_handle_scope scope;
 	napi_value global, logFn, rval;
 
-	NAPI_FATAL("dispatchLog", napi_open_handle_scope(env, &scope))
+	NAPI_FATAL("flushLog", napi_open_handle_scope(env, &scope))
 
 	if (!logRef) {
 		return;
 	}
 
-	NAPI_FATAL("dispatchLog", napi_get_reference_value(env, logRef, &logFn))
+	NAPI_FATAL("flushLog", napi_get_reference_value(env, logRef, &logFn))
 
 	if (logFn == NULL) {
 		return;
 	}
 
-	NAPI_FATAL("dispatchLog", napi_get_global(env, &global))
+	NAPI_FATAL("flushLog", napi_get_global(env, &global))
 
 	std::lock_guard<std::mutex> lock(logLock);
 
@@ -43,27 +43,27 @@ void flushLog(napi_env env) {
 		napi_value argv[2];
 
 		if (obj->ns.length()) {
-			NAPI_FATAL("dispatchLog", napi_create_string_utf8(env, obj->ns.c_str(), obj->ns.length(), &argv[0]))
+			NAPI_FATAL("flushLog", napi_create_string_utf8(env, obj->ns.c_str(), obj->ns.length(), &argv[0]))
 		} else {
-			NAPI_FATAL("dispatchLog", napi_get_null(env, &argv[0]))
+			NAPI_FATAL("flushLog", napi_get_null(env, &argv[0]))
 		}
-		NAPI_FATAL("dispatchLog", napi_create_string_utf8(env, obj->msg.c_str(), obj->msg.length(), &argv[1]))
+		NAPI_FATAL("flushLog", napi_create_string_utf8(env, obj->msg.c_str(), obj->msg.length(), &argv[1]))
 
 		// we have to create an async context to prevent domain.enter error
 		napi_value resName;
-		NAPI_FATAL("dispatchLog", napi_create_string_utf8(env, "node_ios_device.log", NAPI_AUTO_LENGTH, &resName))
+		NAPI_FATAL("flushLog", napi_create_string_utf8(env, "node_ios_device.log", NAPI_AUTO_LENGTH, &resName))
 		napi_async_context ctx;
-		NAPI_FATAL("dispatchLog", napi_async_init(env, NULL, resName, &ctx))
+		NAPI_FATAL("flushLog", napi_async_init(env, NULL, resName, &ctx))
 
 		// emit the log message
 		napi_status status = napi_make_callback(env, ctx, global, logFn, 2, argv, &rval);
 
 		napi_async_destroy(env, ctx);
 
-		NAPI_FATAL("dispatchLog", status)
+		NAPI_FATAL("flushLog", status)
 	}
 
-	NAPI_FATAL("dispatchLog", napi_close_handle_scope(env, scope))
+	NAPI_FATAL("flushLog", napi_close_handle_scope(env, scope))
 #endif
 }
 
@@ -156,7 +156,7 @@ NAPI_METHOD(list) {
 }
 
 /**
- * Helper for generating the forward() and syslog() functions.
+ * Helper for generating the forward() functions.
  */
 #define CREATE_LOG_METHOD(name, argc, errCode, code) \
 	NAPI_METHOD(name) { \
@@ -165,24 +165,22 @@ NAPI_METHOD(list) {
 			std::string udid = napi_string_to_std_string(env, argv[0]); \
 			std::shared_ptr<Device> device = deviceman->getDevice(udid); \
 			code; \
+			flushLog(env); \
 		} catch (std::exception& e) { \
+			flushLog(env); \
 			const char* msg = e.what(); \
 			LOG_DEBUG_1(STRINGIFY(name), "Error: %s", msg) \
 			NAPI_THROW_ERROR(errCode, msg, ::strlen(msg), NULL) \
 		} \
-		flushLog(env); \
 		NAPI_RETURN_UNDEFINED(STRINGIFY(name)) \
 	}
 
 /**
- * forward() and syslog()
+ * forward()
  * All of the logic is performed in the device's relay object.
  */
 CREATE_LOG_METHOD(startForward, 3, "ERR_FORWARD_START", device->forward(RELAY_START, argv[1], argv[2]))
 CREATE_LOG_METHOD(stopForward,  3, "ERR_FORWARD_STOP",  device->forward(RELAY_STOP, argv[1], argv[2]))
-
-CREATE_LOG_METHOD(startSyslog,  2, "ERR_SYSLOG_START",  device->syslog(RELAY_START, argv[1]))
-CREATE_LOG_METHOD(stopSyslog,   2, "ERR_SYSLOG_STOP",   device->syslog(RELAY_STOP, argv[1]))
 
 /**
  * watch()
@@ -242,9 +240,7 @@ NAPI_INIT() {
 	NAPI_EXPORT_FUNCTION(install);
 	NAPI_EXPORT_FUNCTION(list);
 	NAPI_EXPORT_FUNCTION(startForward);
-	NAPI_EXPORT_FUNCTION(startSyslog);
 	NAPI_EXPORT_FUNCTION(stopForward);
-	NAPI_EXPORT_FUNCTION(stopSyslog);
 	NAPI_EXPORT_FUNCTION(watch);
 	NAPI_EXPORT_FUNCTION(unwatch);
 

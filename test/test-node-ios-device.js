@@ -39,8 +39,8 @@ try {
 			cwd: path.resolve(__dirname, 'TestApp')
 		});
 
-		if (status || !/BUILD SUCCEEDED/.test(stdout.toString())) {
-			throw new Error('Build TestApp failed');
+		if (!/BUILD SUCCEEDED/.test(stdout.toString())) {
+			throw new Error(`Build TestApp failed (status ${status}`);
 		}
 	}
 } catch (e) {
@@ -265,46 +265,5 @@ describe('forward()', () => {
 				resolve();
 			}, 10000))
 		]);
-	});
-});
-
-describe('syslog()', () => {
-	it('should fail if udid is invalid', () => {
-		expect(() => {
-			iosDevice.syslog();
-		}).to.throw(TypeError, 'Expected udid to be a non-empty string');
-
-		expect(() => {
-			iosDevice.syslog(1234);
-		}).to.throw(TypeError, 'Expected udid to be a non-empty string');
-	});
-
-	it('should error if udid device is not connected', () => {
-		expect(() => {
-			iosDevice.syslog('foo');
-		}).to.throw(Error, 'Device "foo" not found');
-	});
-
-	wifiAppIt('should error trying to start syslog service on Wi-Fi only device', () => {
-		expect(() => {
-			iosDevice.syslog(wifiUDID);
-		}).to.throw(Error, 'syslog requires a USB connected iOS device');
-	});
-
-	usbAppIt('should relay syslog messages', async function () {
-		this.timeout(15000);
-		this.slow(15000);
-
-		let counter = 0;
-		const syslogHandle = iosDevice.syslog(usbUDID);
-		syslogHandle.on('data', msg => counter++);
-
-		await new Promise(resolve => setTimeout(resolve, 2000));
-
-		const count = counter;
-		syslogHandle.stop();
-
-		await new Promise(resolve => setTimeout(resolve, 2000));
-		expect(counter).to.equal(count);
 	});
 });

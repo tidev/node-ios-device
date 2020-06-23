@@ -12,13 +12,21 @@ RelayConnection::RelayConnection(napi_env env, std::weak_ptr<CFRunLoopRef> runlo
 	env(env),
 	runloop(runloop),
 	socket(NULL),
-	source(NULL) {}
+	source(NULL) {
+
+	msgQueueUpdate = new uv_async_t;
+}
 
 /**
  * Shuts down a relay connection.
  */
 RelayConnection::~RelayConnection() {
-	::uv_close((uv_handle_t*)&msgQueueUpdate, NULL);
+	::uv_close(
+		(uv_handle_t*)msgQueueUpdate,
+		[](uv_handle_t* handle) {
+			delete (uv_async_t *)handle;
+		}
+	);
 	disconnect();
 }
 
@@ -38,7 +46,7 @@ void RelayConnection::add(napi_value listener) {
 	}
 
 	if (count == 1) {
-		::uv_ref((uv_handle_t*)&msgQueueUpdate);
+		::uv_ref((uv_handle_t*)msgQueueUpdate);
 		connect();
 	}
 }
@@ -201,14 +209,14 @@ void RelayConnection::init() {
 
 	uv_loop_t* loop;
 	::napi_get_uv_event_loop(env, &loop);
-	msgQueueUpdate.data = &self;
-	::uv_async_init(loop, &msgQueueUpdate, [](uv_async_t* handle) {
+	msgQueueUpdate->data = &self;
+	::uv_async_init(loop, msgQueueUpdate, [](uv_async_t* handle) {
 		std::weak_ptr<RelayConnection>* ptr = static_cast<std::weak_ptr<RelayConnection>*>(handle->data);
 		if (auto conn = (*ptr).lock()) {
 			conn->dispatch();
 		}
 	});
-	::uv_unref((uv_handle_t*)&msgQueueUpdate);
+	::uv_unref((uv_handle_t*)msgQueueUpdate);
 }
 
 /**
@@ -219,7 +227,7 @@ void RelayConnection::onClose() {
 		std::lock_guard<std::mutex> lock(msgQueueLock);
 		msgQueue.push(std::make_shared<RelayMessage>("end"));
 	}
-	::uv_async_send(&msgQueueUpdate);
+	::uv_async_send(msgQueueUpdate);
 }
 
 /**
@@ -251,7 +259,7 @@ void RelayConnection::onData(const char* data) {
 	}
 
 	if (changed) {
-		::uv_async_send(&msgQueueUpdate);
+		::uv_async_send(msgQueueUpdate);
 	}
 }
 
@@ -278,7 +286,7 @@ void RelayConnection::remove(napi_value listener) {
 	}
 
 	if (listeners.size() == 0) {
-		::uv_unref((uv_handle_t*)&msgQueueUpdate);
+		::uv_unref((uv_handle_t*)msgQueueUpdate);
 		disconnect();
 	}
 }
@@ -349,38 +357,6 @@ void PortRelay::config(uint8_t action, napi_value nport, napi_value listener, st
 			LOG_DEBUG("PortRelay::config", "Connection has no more listeners, removing")
 			connections.erase(it);
 		}
-	}
-}
-
-/**
- * Intializes a syslog relay instance along with its base class.
- */
-SyslogRelay::SyslogRelay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop) :
-	Relay(env, runloop) {
-
-	relayConn = RelayConnection::create(env, runloop, (int*)&connection);
-}
-
-/**
- * Closes the connection handle.
- */
-SyslogRelay::~SyslogRelay() {
-	::close(connection);
-}
-
-/**
- * Adds or removes a listener to the syslog relay connection.
- */
-void SyslogRelay::config(uint8_t action, napi_value listener, std::shared_ptr<DeviceInterface> iface) {
-	if (action == RELAY_START) {
-		iface->startService(AMSVC_SYSLOG_RELAY, &connection);
-
-		LOG_DEBUG("SyslogRelay::config", "Adding listener to syslog relay connection")
-		relayConn->add(listener);
-
-	} else {
-		LOG_DEBUG("SyslogRelay::config", "Removing listener from syslog relay connection")
-		relayConn->remove(listener);
 	}
 }
 
