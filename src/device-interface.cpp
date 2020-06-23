@@ -6,8 +6,8 @@ namespace node_ios_device {
 /**
  * Initialzies the device interface.
  */
-DeviceInterface::DeviceInterface(std::string& udid, am_device& dev) :
-	dev(dev), udid(udid), numConnections(0) {}
+DeviceInterface::DeviceInterface(std::string& udid, am_device& dev, uint32_t type) :
+	dev(dev), type(type), udid(udid), numConnections(0) {}
 
 /**
  * Cleanup the device interface, namely disconnects and stops the active session.

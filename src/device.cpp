@@ -12,7 +12,6 @@ namespace node_ios_device {
  */
 Device::Device(napi_env env, std::string& udid, am_device& dev, std::weak_ptr<CFRunLoopRef> runloop) :
 	portRelay(env, runloop),
-	syslogRelay(env, runloop),
 	env(env),
 	udid(udid) {
 
@@ -60,7 +59,7 @@ DeviceInterface* Device::config(am_device& dev, bool isAdd) {
 	if (type == 1) {
 		if (isAdd && !usb) {
 			LOG_DEBUG_1("Device::config", "Device %s connected via USB", udid.c_str())
-			usb = std::make_shared<DeviceInterface>(udid, dev);
+			usb = std::make_shared<DeviceInterface>(udid, dev, type);
 			return usb.get();
 		} else if (!isAdd && usb) {
 			LOG_DEBUG_1("Device::config", "Device %s disconnected via USB", udid.c_str())
@@ -69,14 +68,16 @@ DeviceInterface* Device::config(am_device& dev, bool isAdd) {
 	} else if (type == 2) {
 		if (isAdd && !wifi) {
 			LOG_DEBUG_1("Device::config", "Device %s connected via Wi-Fi", udid.c_str())
-			wifi = std::make_shared<DeviceInterface>(udid, dev);
+			wifi = std::make_shared<DeviceInterface>(udid, dev, type);
 			return wifi.get();
 		} else if (!isAdd && wifi) {
 			LOG_DEBUG_1("Device::config", "Device %s disconnected via Wi-Fi", udid.c_str())
 			wifi = nullptr;
 		}
 	} else {
-		throw std::runtime_error("Unknown device interface type");
+		std::stringstream error;
+		error << "Unknown device interface type " << type;
+		throw std::runtime_error(error.str());
 	}
 
 	return NULL;
@@ -105,16 +106,6 @@ void Device::install(std::string& appPath) {
 		error << "No interfaces found for device " << udid;
 		throw std::runtime_error(error.str());
 	}
-}
-
-/**
- * Starts or stops syslog relaying.
- */
-void Device::syslog(uint8_t action, napi_value listener) {
-	if (action == RELAY_START && !usb) {
-		throw std::runtime_error("syslog requires a USB connected iOS device");
-	}
-	syslogRelay.config(action, listener, usb);
 }
 
 /**

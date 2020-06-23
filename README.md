@@ -1,15 +1,11 @@
-# node-ios-device [![Build Status][3]][4] [![Greenkeeper badge][5]][6]
+# node-ios-device
 
 Queries connected iOS devices, installs apps, and relays log output.
 
 ## Prerequisites
 
-`node-ios-device` only works on macOS 10.11 or newer and requires N-API version 3 and the following
-Node.js versions:
-
- * Node.js
-   * v8.12.x or newer
-   * v10.2.0 or newer
+`node-ios-device` only works on macOS 10.11 or newer. It use N-API version 3 and requires Node.js
+10.13.0 LTS or newer.
 
 ## Installation
 
@@ -23,16 +19,15 @@ $ node-ios-device
 USAGE: node-ios-device <command> [options]
 
 COMMANDS:
-  forward  Connects to a port on an device and relays messages
-  install  Install an app on the specified device
-  list     Lists connected devices
-  syslog   Outputs a devices syslog messages
-  watch    Listens for devices to be connected/disconnected
+  forward               Connects to a port on an device and relays messages
+  i, install            Install an app on the specified device
+  ls, list, devices     Lists connected devices
+  watch, track-devices  Listens for devices to be connected/disconnected
 
 GLOBAL OPTIONS:
-  --no-color    Disable colors
-  -h,--help     Displays the help screen
-  -v,--version  Outputs the version
+  --no-color     Disable colors
+  -h, --help     Displays the help screen
+  -v, --version  Outputs the version
 ```
 
 ## Example
@@ -55,12 +50,6 @@ handle.on('error', console.error);
 iosDevice.install('<device udid>', '/path/to/my.app');
 console.log('Success!');
 
-// relay the syslog output to the console
-iosDevice
-    .syslog('<device udid>')
-    .on('data', console.log)
-    .on('end', () => console.log('Device disconnected'));
-
 // relay output from a TCP port created by an iOS app
 iosDevice
     .forward('<device udid>', 1337)
@@ -75,10 +64,6 @@ iosDevice
 Retrieves an array of all connected iOS devices.
 
 Returns an `Array` of device objects.
-
-Note that only devices connected via a USB cable will be returned. Devices connected via Wi-Fi will
-not be returned. The main reason we do this is because you can only relay the syslog from USB
-connected devices.
 
 Device objects contain the following information:
 
@@ -133,45 +118,6 @@ Installs an iOS app on the specified device.
 Currently, an `appPath` that begins with `~` is not supported.
 
 The `appPath` must resolve to an iOS .app, not the .ipa file.
-
-### `syslog(udid)`
-
-Relays the syslog from the iOS device.
-
-> Starting with iOS 10, the syslog no longer contains application specific output. If you want
-> output for a specific app, then you will need to use a TCP socket. See
-> [`forward()`](#forwardudid-port) for more info.
-
-* `{String} udid` - The device udid
-
-Returns a `Handle` instance that contains a `stop()` method to discontinue emitting messages.
-
-> NOTE: `syslog()` only supports USB connected devices. Wi-Fi-only connected devices will not work.
-
-#### Event: `'data'`
-
-Emitted for each line of output. Empty lines are omitted.
-
-- `{String} message` - The log message.
-
-#### Event: 'end'
-
-Emitted when the device is physically disconnected. Note that this does not unregister the internal
-callback. You must manually call `handle.stop()` to cleanup.
-
-#### Example:
-
-```js
-const handle = iosDevice
-	.syslog('<device udid>')
-    .on('data', console.log)
-    .on('end', () => console.log('End of syslog'));
-
-setTimeout(function () {
-	// turn off logging after 1 minute
-	handle.stop();
-}, 60000);
-```
 
 ### `forward(udid, port)`
 
@@ -234,7 +180,3 @@ in this distribution for more information.
 
 [1]: https://github.com/appcelerator/node-ios-device/blob/master/LICENSE
 [2]: https://www.npmjs.com/package/snooplogg
-[3]: https://travis-ci.org/appcelerator/node-ios-device.svg?branch=master
-[4]: https://travis-ci.org/appcelerator/node-ios-device
-[5]: https://badges.greenkeeper.io/appcelerator/node-ios-device.svg
-[6]: https://greenkeeper.io/

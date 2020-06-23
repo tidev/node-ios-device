@@ -62,12 +62,12 @@ protected:
 	CFSocketRef                    socket;
 	CFRunLoopSourceRef             source;
 	std::mutex                     msgQueueLock;
-	uv_async_t                     msgQueueUpdate;
+	uv_async_t*                    msgQueueUpdate;
 	std::queue<std::shared_ptr<RelayMessage>> msgQueue;
 };
 
 /**
- * Base class for port and syslog relay classes.
+ * Base class for relay implementations.
  */
 class Relay {
 public:
@@ -92,21 +92,6 @@ public:
 
 protected:
 	std::map<uint32_t, std::shared_ptr<RelayConnection>> connections;
-};
-
-/**
- * Implementation for relaying data from the syslog relay service on the device.
- */
-class SyslogRelay : public Relay {
-public:
-	SyslogRelay(napi_env env, std::weak_ptr<CFRunLoopRef> runloop);
-	virtual ~SyslogRelay();
-	void config(uint8_t action, napi_value listener, std::shared_ptr<DeviceInterface> iface);
-
-	service_conn_t connection;
-
-protected:
-	std::shared_ptr<RelayConnection> relayConn;
 };
 
 }

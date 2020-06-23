@@ -13,7 +13,8 @@ const path = require('path');
  */
 const api = module.exports = new EventEmitter();
 
-// init node-ios-device's debug logging and device manager.
+// init node-ios-device's debug logging and device manager
+// note: this is synchronous
 binding.init((ns, msg) => {
 	api.emit('log', msg);
 	if (ns) {
@@ -24,12 +25,12 @@ binding.init((ns, msg) => {
 });
 
 /**
- * Relays syslog messages.
+ * Connects to a server running on the iOS device and relays the data.
  *
  * @param {String} udid - The device udid to install the app to.
  * @param {Number} port - The port number to connect to and forward messages from.
  * @returns {Promise<EventEmitter>} Resolves a handle to wire up listeners and stop watching.
- * @emits {data} Emits a buffer containing syslog messages.
+ * @emits {data} Emits a buffer containing the data.
  * @emits {end} Emits when the device has been disconnected.
  */
 api.forward = function forward(udid, port) {
@@ -87,28 +88,6 @@ api.install = function install(udid, appPath) {
  * @returns {Array.<Object>}
  */
 api.list = binding.list;
-
-/**
- * Relays syslog messages.
- *
- * @param {String} udid - The device udid to install the app to.
- * @returns {Promise<EventEmitter>} Resolves a handle to wire up listeners and stop watching.
- * @emits {data} Emits a buffer containing syslog messages.
- * @emits {end} Emits when the device has been disconnected.
- */
-api.syslog = function syslog(udid) {
-	if (!udid || typeof udid !== 'string') {
-		throw new TypeError('Expected udid to be a non-empty string');
-	}
-
-	const handle = new EventEmitter();
-	const emit = handle.emit.bind(handle);
-
-	handle.stop = () => binding.stopSyslog(udid, emit);
-	binding.startSyslog(udid, emit);
-
-	return handle;
-};
 
 /**
  * Watches a key for changes to subkeys and values.

@@ -108,7 +108,7 @@ namespace node_ios_device {
 	#define LOG_DEBUG(ns, msg) \
 		{ \
 			std::string str(msg); \
-			::fprintf(stderr, "%s: %s\n", ns, str.c_str()); \
+			::fprintf(stderr, "%s %s\n", ns, str.c_str()); \
 		}
 #else
 	#define LOG_DEBUG_VARS \

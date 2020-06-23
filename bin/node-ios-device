@@ -51,19 +51,6 @@ new CLI({
 				console.log(JSON.stringify(iosDevice.list(), null, '  '));
 			}
 		},
-		syslog: {
-			args: [
-				{ name: 'udid', desc: 'The iOS device\'s unique device identifier' }
-			],
-			desc: 'Outputs a devices syslog messages',
-			action({ argv }) {
-				return new Promise(resolve => {
-					iosDevice.syslog(selectDevice(argv.udid))
-						.on('data', console.log)
-						.on('end', resolve);
-				});
-			}
-		},
 		watch: {
 			aliases: 'track-devices',
 			desc: 'Listens for devices to be connected/disconnected',

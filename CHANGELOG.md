@@ -1,3 +1,13 @@
+# v3.0.0 (Jun 23, 2020)
+
+ * BREAKING CHANGE: Dropped support for Node.js 10.12.0. Please use Node.js 10.13.0 LTS or newer.
+ * BREAKING CHANGE: Removed syslog relay API. With iOS 10, syslog no longer returned app specific
+   messages. Then in iOS 13, starting the syslog relay service seems to not work reliably.
+ * fix: Fix assertion failure where async handle was being deleted before libuv had fully closed
+   the handle.
+ * fix: Flush pending debug log messages when error is thrown initializing relay.
+ * chore: Updated dependencies.
+
 # v2.1.0 (Jun 9, 2020)
 
  * feat: Added Electron compatibility.

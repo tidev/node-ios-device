@@ -19,7 +19,7 @@ enum InterfaceType { USB, WiFi };
  */
 class DeviceInterface {
 public:
-	DeviceInterface(std::string& udid, am_device& dev);
+	DeviceInterface(std::string& udid, am_device& dev, uint32_t type);
 	~DeviceInterface();
 
 	void connect();
@@ -30,6 +30,7 @@ public:
 	void startService(const char* serviceName, service_conn_t* connection);
 
 	am_device   dev;
+	uint32_t    type;
 
 private:
 	std::string udid;

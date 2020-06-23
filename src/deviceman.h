@@ -40,7 +40,7 @@ private:
 	std::shared_ptr<DeviceMan> self;
 
 	napi_env env;
-	uv_async_t notifyChange;
+	uv_async_t* notifyChange;
 
 	std::mutex deviceMutex;
 	std::map<std::string, std::shared_ptr<Device>> devices;

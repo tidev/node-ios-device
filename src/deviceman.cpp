@@ -9,16 +9,28 @@ DeviceMan::DeviceMan(napi_env env) :
 	env(env),
 	initialized(false),
 	initTimer(NULL),
-	runloop(NULL) {}
+	runloop(NULL) {
+
+	notifyChange = new uv_async_t;
+}
 
 /**
  * Releases the async handle, unsubscribes from iOS device notifications, and stops the runloop.
  */
 DeviceMan::~DeviceMan() {
 	LOG_DEBUG_THREAD_ID("DeviceMan::~DeviceMan", "Shutting down device manager")
-	::uv_close((uv_handle_t*)&notifyChange, NULL);
+
+	::uv_close(
+		(uv_handle_t*)notifyChange,
+		[](uv_handle_t* handle) {
+			delete (uv_async_t *)handle;
+		}
+	);
+
 	::AMDeviceNotificationUnsubscribe(deviceNotification);
+
 	stopInitTimer();
+
 	if (runloop) {
 		::CFRunLoopStop(*runloop);
 		runloop = NULL;
@@ -34,7 +46,7 @@ void DeviceMan::config(napi_value listener, WatchAction action) {
 		NAPI_THROW("DeviceMan::config", "ERROR_NAPI_CREATE_REFERENCE", ::napi_create_reference(env, listener, 1, &ref))
 
 		LOG_DEBUG("DeviceMan::config", "Adding listener")
-		::uv_ref((uv_handle_t*)&notifyChange);
+		::uv_ref((uv_handle_t*)notifyChange);
 		{
 			std::lock_guard<std::mutex> lock(listenersLock);
 			listeners.push_back(ref);
@@ -59,7 +71,7 @@ void DeviceMan::config(napi_value listener, WatchAction action) {
 
 			if (same) {
 				LOG_DEBUG("DeviceMan::config", "Removing listener")
-				::uv_unref((uv_handle_t*)&notifyChange);
+				::uv_unref((uv_handle_t*)notifyChange);
 				it = listeners.erase(it);
 			} else {
 				++it;
@@ -170,12 +182,12 @@ void DeviceMan::init() {
 	// block Node from exiting
 	uv_loop_t* loop;
 	::napi_get_uv_event_loop(env, &loop);
-	notifyChange.data = &self;
-	::uv_async_init(loop, &notifyChange, [](uv_async_t* handle) {
+	notifyChange->data = &self;
+	::uv_async_init(loop, notifyChange, [](uv_async_t* handle) {
 		std::shared_ptr<DeviceMan>* deviceman = static_cast<std::shared_ptr<DeviceMan>*>(handle->data);
 		(*deviceman)->dispatch();
 	});
-	::uv_unref((uv_handle_t*)&notifyChange);
+	::uv_unref((uv_handle_t*)notifyChange);
 
 	LOG_DEBUG_THREAD_ID("DeviceMan::init", "Starting background thread")
 	std::thread(&DeviceMan::run, this).detach();
@@ -253,7 +265,7 @@ void DeviceMan::onDeviceNotification(am_device_notification_callback_info* info)
 	// we need to notify if devices changed and this must be done outside the
 	// scopes above so that the mutex is unlocked
 	if (changed) {
-		::uv_async_send(&notifyChange);
+		::uv_async_send(notifyChange);
 	}
 }
 
