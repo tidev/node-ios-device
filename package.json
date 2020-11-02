@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "Simple library for listing and installing apps on iOS devices",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
@@ -28,9 +28,9 @@
     "devices"
   ],
   "dependencies": {
-    "debug": "^4.1.1",
+    "debug": "^4.2.0",
     "nan": "^2.14.2",
-    "node-pre-gyp": "^0.15.0",
+    "node-pre-gyp": "^0.16.0",
     "node-pre-gyp-init": "^1.1.0"
   },
   "bundledDependencies": [
@@ -66,7 +66,8 @@
       "11.15.0": 67,
       "12.11.0": 72,
       "13.5.0": 79,
-      "14.13.1": 83
+      "14.13.1": 83,
+      "15.0.1": 88
     }
   },
   "license": "Apache-2.0",
