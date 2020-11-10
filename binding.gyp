@@ -2,9 +2,7 @@
 	'variables': {
 		'build_v8_with_gn': 'false',
 		'v8_enable_pointer_compression': 'false',
-		'v8_enable_31bit_smis_on_64bit_arch': 'false',
-		'mobiledevice_framework_location': '/System/Library/PrivateFrameworks/MobileDevice.framework',
-		'new_mobiledevice_framework_location': '/Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework'
+		'v8_enable_31bit_smis_on_64bit_arch': 'false'
 	},
 	'conditions': [
 		['OS=="mac"', {
@@ -50,10 +48,10 @@
 					'actions': [
 						{
 							'action_name': 'copy_mobiledevice',
-							'inputs': [ ],
+							'inputs': [ '/System/Library/PrivateFrameworks/MobileDevice.framework', '/Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework' ],
 							'outputs': [ '<(module_root_dir)/build/' ],
 							'action': [ 
-								'./copy-framework.sh', '<@(mobiledevice_framework_location)', '<@(new_mobiledevice_framework_location)', '<@(_outputs)'
+								'./copy-framework.sh', '<@(_inputs)', '<@(_outputs)'
 							 ]
 						}
 					],
