@@ -1,7 +1,9 @@
 {
 	'variables': {
 		'v8_enable_pointer_compression': 0,
-		'v8_enable_31bit_smis_on_64bit_arch': 0
+		'v8_enable_31bit_smis_on_64bit_arch': 0,
+		'mobiledevice_framework_location': '/System/Library/PrivateFrameworks/MobileDevice.framework',
+		'new_mobiledevice_framework_location': '/Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework'
 	},
 	'conditions': [
 		['OS=="mac"', {
@@ -30,9 +32,7 @@
 						'MobileDevice.framework'
 					],
 					'mac_framework_dirs': [
-						'<(module_root_dir)/build',
-						'/System/Library/PrivateFrameworks',
-						'/Library/Apple/System/Library/PrivateFrameworks'
+						'<(module_root_dir)/build'
 					],
 					'include_dirs': [
 						'<!(node -e "require(\'napi-macros\')")'
@@ -51,7 +51,17 @@
 						'OTHER_LDFLAGS': [ '-stdlib=libc++' ],
 						'MACOSX_DEPLOYMENT_TARGET': '10.11',
 						'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'
-					}
+					},
+					'actions': [
+						{
+							'action_name': 'copy_mobiledevice',
+							'inputs': [ ],
+							'outputs': [ '<(module_root_dir)/build/' ],
+							'action': [ 
+								'./copy-framework.sh', '<@(mobiledevice_framework_location)', '<@(new_mobiledevice_framework_location)', '<@(_outputs)'
+							 ]
+						}
+					]
 				}
 			]
 		}, {
