@@ -1,4 +1,8 @@
 {
+	'variables': {
+		'mobiledevice_framework_location': '/System/Library/PrivateFrameworks/MobileDevice.framework',
+		'new_mobiledevice_framework_location': '/Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework'
+	},
 	'conditions': [
 		['OS=="mac"', {
 			'targets': [
@@ -40,20 +44,22 @@
 					'cflags_cc!': [
 						'-fno-exceptions'
 					],
-					'actions': [
-						{
-							'action_name': 'copy_mobiledevice',
-							'inputs': [ '/System/Library/PrivateFrameworks/MobileDevice.framework' ],
-							'outputs': [ '<(module_root_dir)/build/MobileDevice.framework' ],
-							'action': [ 'cp', '-R', '<@(_inputs)', '<@(_outputs)' ]
-						}
-					],
 					'xcode_settings': {
 						'OTHER_CPLUSPLUSFLAGS' : [ '-std=c++17', '-stdlib=libc++' ],
 						'OTHER_LDFLAGS': [ '-stdlib=libc++' ],
 						'MACOSX_DEPLOYMENT_TARGET': '10.11',
 						'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'
-					}
+					},
+					'actions': [
+						{
+							'action_name': 'copy_mobiledevice',
+							'inputs': [ ],
+							'outputs': [ '<(module_root_dir)/build/' ],
+							'action': [ 
+								'./copy-framework.sh', '<@(mobiledevice_framework_location)', '<@(new_mobiledevice_framework_location)', '<@(_outputs)'
+							 ]
+						}
+					]
 				}
 			]
 		}, {
