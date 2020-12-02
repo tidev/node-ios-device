@@ -1,3 +1,7 @@
+# v3.1.0 (Dec 2, 2020)
+
+ * chore: Updated dependencies.
+
 # v3.0.0 (Jun 23, 2020)
 
  * BREAKING CHANGE: Dropped support for Node.js 10.12.0. Please use Node.js 10.13.0 LTS or newer.

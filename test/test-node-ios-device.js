@@ -40,7 +40,7 @@ try {
 		});
 
 		if (!/BUILD SUCCEEDED/.test(stdout.toString())) {
-			throw new Error(`Build TestApp failed (status ${status}`);
+			throw new Error(`Build TestApp failed (status ${status})`);
 		}
 	}
 } catch (e) {
