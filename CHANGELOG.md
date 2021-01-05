@@ -1,3 +1,8 @@
+# v3.1.1 (Jan 5, 2021)
+
+ * chore: Added arm64 prebuildify script for Apple M1 support, but it's currently untested.
+ * chore: Updated dependencies.
+
 # v3.1.0 (Dec 2, 2020)
 
  * chore: Updated dependencies.

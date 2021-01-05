@@ -1,6 +1,6 @@
 {
   "name": "node-ios-device",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Simple library for detecting and installing apps on iOS devices",
   "main": "./src/index",
   "gypfile": true,
@@ -25,6 +25,7 @@
     "install": "node -e \"process.platform === 'darwin' && require('node-gyp-build/bin.js')\"",
     "prepublishOnly": "npm run prebuild && npm run prebuild-ia32",
     "prebuild": "prebuildify --napi=true --strip --electron-compat",
+    "prebuild-arm64": "prebuildify --napi=true --strip --arch=arm64",
     "prebuild-ia32": "prebuildify --napi=true --strip --arch=ia32",
     "build": "node-gyp -j 16 build",
     "build-debug": "node-gyp -j 16 build --debug",
@@ -34,10 +35,10 @@
     "test": "JUNIT_REPORT_PATH=junit.xml mocha -r chai --reporter mocha-jenkins-reporter test/**/test-*.js"
   },
   "dependencies": {
-    "cli-kit": "^1.9.1",
+    "cli-kit": "^1.9.2",
     "napi-macros": "^2.0.0",
     "node-gyp-build": "^4.2.3",
-    "snooplogg": "^3.0.1"
+    "snooplogg": "^3.0.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",
