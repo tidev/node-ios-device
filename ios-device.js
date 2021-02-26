@@ -16,7 +16,7 @@
 var debug = require('debug')('node-ios-device');
 var EventEmitter = require('events').EventEmitter;
 var fs = require('fs');
-var init = require('node-pre-gyp-init');
+var init = require('node-gyp-build');
 var path = require('path');
 var util = require('util');
 
@@ -60,19 +60,11 @@ function initBinding(callback) {
 
 	debug('Initializing binding');
 
-	init(path.resolve(__dirname, './package.json'), function (err, bindingPath) {
-		if (err) {
-			return callback(err);
-		}
+	binding = init(__dirname);
+	debug('Initializing node-ios-device and setting emitter');
+	binding.initialize(emitter);
 
-		debug('Loading binding: ' + bindingPath);
-		binding = require(bindingPath);
-
-		debug('Initializing node-ios-device and setting emitter');
-		binding.initialize(emitter);
-
-		callback();
-	});
+	callback();
 }
 
 /**

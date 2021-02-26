@@ -30,45 +30,16 @@
   "dependencies": {
     "debug": "^4.2.0",
     "nan": "^2.14.2",
-    "node-pre-gyp": "^0.16.0",
-    "node-pre-gyp-init": "^1.1.0"
+    "node-gyp-build": "^4.2.3"
   },
-  "bundledDependencies": [
-    "node-pre-gyp"
-  ],
   "devDependencies": {
-    "aws-sdk": "^2.600.0"
+    "prebuildify": "^4.1.2"
   },
   "scripts": {
-    "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
-    "build-n-publish-binding": "node ./bin/run.js node-pre-gyp rebuild package publish",
-    "prepare": "node ./bin/run.js node ./bin/build-all.js",
-    "rebuild": "node ./bin/run.js node-pre-gyp rebuild",
-    "rebuild-debug": "node ./bin/run.js node-pre-gyp --debug rebuild",
-    "xcode": "node ./bin/run.js node-pre-gyp configure -- -f xcode",
-    "download-all": "node ./bin/download-all.js",
+    "install": "node -e \"process.platform === 'darwin' && node-gyp-build",
+    "prebuild": "prebuildify --all --strip",
+    "prepublishOnly": "npm run prebuild",
     "test": "exit 0"
-  },
-  "binary": {
-    "module_name": "node_ios_device",
-    "module_path": "./binding/{node_abi}-{platform}-{arch}/",
-    "remote_path": "./{name}/v{version}",
-    "host": "https://appc-node-binaries.s3.amazonaws.com",
-    "targets": {
-      "0.10.48": 11,
-      "4.9.1": 46,
-      "5.12.0": 47,
-      "6.17.1": 48,
-      "7.10.1": 51,
-      "8.16.1": 57,
-      "9.11.2": 59,
-      "10.16.3": 64,
-      "11.15.0": 67,
-      "12.11.0": 72,
-      "13.5.0": 79,
-      "14.13.1": 83,
-      "15.0.1": 88
-    }
   },
   "license": "Apache-2.0",
   "gypfile": true,

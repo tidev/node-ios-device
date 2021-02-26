@@ -56,24 +56,6 @@
 								'./copy-framework.sh', '<@(mobiledevice_framework_location)', '<@(new_mobiledevice_framework_location)', '<@(_outputs)'
 							 ]
 						}
-					],
-					'postbuilds': [
-						{
-							'postbuild_name': 'Create binding directory',
-							'action': [
-								'mkdir',
-								'-p',
-								'<(module_path)'
-							]
-						},
-						{
-							'postbuild_name': 'Copy binary into binding directory',
-							'action': [
-								'cp',
-								'<(PRODUCT_DIR)/<(module_name).node',
-								'<(module_path)/<(module_name).node'
-							]
-						}
 					]
 				}
 			]
