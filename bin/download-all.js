@@ -1,11 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 
-if (typeof Promise === 'undefined') {
-	console.log('This script requires Node.js 4 or newer!');
-	process.exit(1);
-}
-
 const fs = require('fs');
 const https = require('https');
 const path = require('path');
@@ -37,31 +32,35 @@ function download(abiVersion) {
 
 		console.log(`Downloading ${url}`);
 
-		https
-			.get(url, response => {
-				if (response.statusCode !== 200) {
-					console.log(`Failed to download ${url} (${response.statusCode})`);
-					failed = true;
-					resolve();
-				} else {
-					console.log(`Downloaded ${url} successfully (${response.statusCode})`);
-					response.pipe(fs.createWriteStream(dest))
-						.on('finish', function () {
-							console.log(`Extracting ${filename}...`);
-							exec(`tar xzf "${filename}"`, { cwd: bindingDir }, function (error) {
-								if (error) {
-									console.log(`Failed to extract ${filename}: ${error.message || error.toString()}`);
-									failed = true;
-									reject(error);
-								} else {
-									fs.unlinkSync(dest);
-									resolve();
-								}
-							});
-						});
-				}
-			})
-			.on('error', reject);
+		function handleResponse(response) {
+			if (response.statusCode === 302 || response.statusCode === 302) {
+				return https.get(response.headers.location, handleResponse);
+			}
+
+			if (response.statusCode !== 200) {
+				console.log(`Failed to download ${url} (${response.statusCode})`);
+				failed = true;
+				resolve();
+				return;
+			}
+
+			console.log(`Downloaded ${url} successfully (${response.statusCode})`);
+			response.pipe(fs.createWriteStream(dest))
+				.on('finish', function () {
+					console.log(`Extracting ${filename}...`);
+					exec(`tar xzf "${filename}"`, { cwd: bindingDir }, function (error) {
+						if (error) {
+							console.log(`Failed to extract ${filename}: ${error.message || error.toString()}`);
+							failed = true;
+							reject(error);
+						} else {
+							fs.unlinkSync(dest);
+							resolve();
+						}
+					});
+				});
+		}
+		https.get(url, handleResponse).on('error', reject);
 	});
 }
 
