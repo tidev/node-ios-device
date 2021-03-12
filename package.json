@@ -33,9 +33,6 @@
     "node-pre-gyp": "^0.16.0",
     "node-pre-gyp-init": "^1.1.0"
   },
-  "bundledDependencies": [
-    "node-pre-gyp"
-  ],
   "devDependencies": {},
   "scripts": {
     "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
