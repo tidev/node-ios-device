@@ -55,6 +55,8 @@
     "remote_path": "./{name}/v{version}",
     "host": "https://appc-node-binaries.s3.amazonaws.com",
     "targets": {
+      "10.16.3": 64,
+      "11.15.0": 67,
       "12.11.0": 72,
       "13.5.0": 79,
       "14.13.1": 83,
@@ -65,6 +67,6 @@
   "gypfile": true,
   "main": "./ios-device",
   "engines": {
-    "node": ">=12.11"
+    "node": ">=10.13"
   }
 }
