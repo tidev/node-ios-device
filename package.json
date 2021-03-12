@@ -33,11 +33,14 @@
     "nan": "^2.14.2",
     "node-pre-gyp-init": "^1.2.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@octokit/rest": "^18.3.5"
+  },
   "scripts": {
     "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
     "build-n-publish-binding": "node ./bin/run.js node-pre-gyp rebuild package publish",
     "prepare": "node ./bin/run.js node ./bin/build-all.js",
+    "package-all": "node ./bin/run.js node ./bin/build-all.js rebuild package",
     "rebuild": "node ./bin/run.js node-pre-gyp rebuild",
     "rebuild-debug": "node ./bin/run.js node-pre-gyp --debug rebuild",
     "xcode": "node ./bin/run.js node-pre-gyp configure -- -f xcode",
