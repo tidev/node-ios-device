@@ -16,8 +16,16 @@ let isPublish = false;
 
 // Determine if we got invoked via an `npm prepare` through `npm publish`
 if (process.env.npm_lifecycle_event === 'prepare') {
-	const argv = JSON.parse(process.env.npm_config_argv);
-	isPublish = argv.cooked.indexOf('publish') !== -1;
+	if (process.env.npm_command) { // npm v7+
+		isPublish = process.env.npm_command === 'publish';
+	} else if (process.env.npm_config_argv) { // npm v6-
+		const argv = JSON.parse(process.env.npm_config_argv);
+		isPublish = argv.cooked.indexOf('publish') !== -1;
+	} else { // future-proof if npm changes again
+		console.error('Unable to determine if `npm prepare` was called indirectly via `npm publish`. Has npm changed?');
+		process.exit(1);
+	}
+
 	if (isPublish) {
 		actions.push('package');
 	}
