@@ -28,6 +28,7 @@
     "devices"
   ],
   "dependencies": {
+    "@mapbox/node-pre-gyp": "^1.0.1",
     "debug": "^4.2.0",
     "nan": "^2.14.2",
     "node-pre-gyp-init": "^1.2.0"

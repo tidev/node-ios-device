@@ -9,7 +9,7 @@ if (process.platform !== 'darwin') {
 const path = require('path');
 const pkgJson = require(path.resolve(__dirname + '/../package.json'));
 const targets = Object.keys(pkgJson.binary.targets);
-const nodePreGyp = path.resolve(__dirname, '..', 'node_modules', 'node-pre-gyp', 'bin', 'node-pre-gyp');
+const nodePreGyp = path.resolve(__dirname, '..', 'node_modules/.bin/node-pre-gyp');
 const actions = [ 'rebuild' ];
 
 if (process.env.npm_lifecycle_event === 'prepare') {
