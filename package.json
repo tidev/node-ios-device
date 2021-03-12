@@ -36,9 +36,7 @@
   "bundledDependencies": [
     "node-pre-gyp"
   ],
-  "devDependencies": {
-    "aws-sdk": "^2.600.0"
-  },
+  "devDependencies": {},
   "scripts": {
     "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
     "build-n-publish-binding": "node ./bin/run.js node-pre-gyp rebuild package publish",
