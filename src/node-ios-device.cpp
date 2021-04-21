@@ -355,7 +355,12 @@ NAN_MODULE_INIT(init) {
 	Nan::Set(target, Nan::New("startLogRelay").ToLocalChecked(), Nan::GetFunction(Nan::New<FunctionTemplate>(startLogRelay)).ToLocalChecked());
 	Nan::Set(target, Nan::New("stopLogRelay").ToLocalChecked(),  Nan::GetFunction(Nan::New<FunctionTemplate>(stopLogRelay)).ToLocalChecked());
 
+#if NODE_MAJOR_VERSION >= 12
+	node::Environment* env = node::GetCurrentEnvironment(Nan::GetCurrentContext());
+	node::AtExit(env, cleanup, NULL);
+#else
 	node::AtExit(cleanup);
+#endif
 }
 
 NODE_MODULE(node_ios_device, init)
