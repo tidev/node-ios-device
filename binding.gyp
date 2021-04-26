@@ -42,8 +42,6 @@
 						'-fno-exceptions'
 					],
 					'xcode_settings': {
-						'OTHER_CPLUSPLUSFLAGS' : [ '-std=c++11', '-stdlib=libc++' ],
-						'OTHER_LDFLAGS': [ '-stdlib=libc++' ],
 						'MACOSX_DEPLOYMENT_TARGET': '10.11',
 						'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'
 					},

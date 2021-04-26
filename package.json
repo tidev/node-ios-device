@@ -28,7 +28,7 @@
     "devices"
   ],
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.1",
+    "@mapbox/node-pre-gyp": "^1.0.4",
     "debug": "^4.2.0",
     "nan": "^2.14.2",
     "node-pre-gyp-init": "^1.2.0"
@@ -58,7 +58,8 @@
       "12.11.0": 72,
       "13.5.0": 79,
       "14.13.1": 83,
-      "15.0.1": 88
+      "15.0.1": 88,
+      "16.0.0": 93
     }
   },
   "license": "Apache-2.0",
