@@ -34,7 +34,7 @@ async function main() {
         const result = await github.repos.getReleaseByTag({ owner, repo, tag: release.tag_name });
         alreadyExists = true;
         uploadUrl = result.data.upload_url;
-        releaseId = result.data.release_id;
+        releaseId = result.data.id;
         url = result.data.html_url;
     } catch (error) {
         // doesn't exist yet!
@@ -42,8 +42,11 @@ async function main() {
         const draftRelease = { ...release, draft: true };
         const result = await github.repos.createRelease(draftRelease);
         uploadUrl = result.data.upload_url;
-        releaseId = result.data.release_id;
+        releaseId = result.data.id;
+        url = result.data.html_url;
     }
+
+    console.log(`alreadyExists ${alreadyExists}, releaseId ${releaseId}, uploadUrl ${uploadUrl}, url ${url}`);
 
     // Append assets to the release
     const BINDING_DIR = path.join(__dirname, `../build/stage/${owner}/${repo}/releases/download/${release.tag_name}`)
