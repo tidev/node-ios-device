@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "Simple library for listing and installing apps on iOS devices",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "author": {
     "name": "Appcelerator, Inc.",
     "email": "info@appcelerator.com"
