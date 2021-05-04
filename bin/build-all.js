@@ -10,6 +10,7 @@ const path = require('path');
 const pkgJson = require(path.resolve(__dirname + '/../package.json'));
 const targets = Object.keys(pkgJson.binary.targets);
 const nodePreGyp = path.resolve(__dirname, '..', 'node_modules/.bin/node-pre-gyp');
+const archs = ['x86_64', 'arm64'];
 let actions = process.argv.slice(2); // pass in args for what to do
 
 let isPublish = false;
@@ -43,12 +44,14 @@ const spawnSync = require('child_process').spawnSync;
 let exitCode = 0;
 actions.forEach(action => {
 	targets.forEach(target => {
-		const args = [ nodePreGyp ].concat('--target=' + target, action);
-		console.log('Executing:', process.execPath, args.join(' '));
-		const result = spawnSync(process.execPath, args, { stdio: 'inherit' });
-		if (result.status) {
-			exitCode = 1;
-		}
+		archs.forEach(arch => {
+			const args = [ nodePreGyp ].concat('--target=' + target, '--target_arch=' + arch, action);
+			console.log('Executing:', process.execPath, args.join(' '));
+			const result = spawnSync(process.execPath, args, { stdio: 'inherit' });
+			if (result.status) {
+				exitCode = 1;
+			}
+		});
 	});
 });
 
