@@ -10,7 +10,7 @@ const path = require('path');
 const pkgJson = require(path.resolve(__dirname + '/../package.json'));
 const targets = Object.keys(pkgJson.binary.targets);
 const nodePreGyp = path.resolve(__dirname, '..', 'node_modules/.bin/node-pre-gyp');
-const archs = ['x86_64', 'arm64'];
+const archs = ['x64', 'arm64'];
 let actions = process.argv.slice(2); // pass in args for what to do
 
 let isPublish = false;
