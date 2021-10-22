@@ -7,17 +7,14 @@ Queries connected iOS devices, installs apps, and relays log output.
 node-ios-device is currently compatible with the following versions:
 
  * Node.js
-   * 0.10.x (module API v11)
-   * 4.x (module API v46)
-   * 5.x (module API v47)
-   * 6.x (module API v48)
-   * 7.x (module API v51)
-   * 8.x (module API v57)
-   * 9.x (module API v59)
    * 10.x (module API v64)
    * 11.x (module API v67)
    * 12.x (module API v72)
    * 13.x (module API v79)
+   * 14.x (module API v83)
+   * 15.x (module API v88)
+   * 16.x (module API v93)
+   * 17.x (module API v102)
 
 Only Mac OS X (darwin) is supported. You should make this module an optional
 dependency of your application and it will only be downloaded on OS X.
@@ -289,8 +286,7 @@ This section is intended for Appcelerator release managers.
 
 To publish a new release to NPM, run `npm publish`. This will build
 `node-ios-device` for all Node.js module API versions and then upload each
-binary to an Appcelerator Amazon S3 bucket. You must make sure you have a
-`~/.node_pre_gyprc` containing `{ "accessKeyId": "", "secretAccessKey": "" }`.
+binary to the associated release on the GitHub repository.
 
 ## License
 
