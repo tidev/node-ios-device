@@ -2,8 +2,8 @@
 library 'pipeline-library'
 
 runNPMPackage {
-  nodeVersions = [ '10.19.0', '12.18.0', '14.4.0' ]
+  nodeVersions = [ '12.18.0', '14.19.0' ]
   platformsWithLabels = [
-    'osx': 'xcode-9'
+    'osx': 'xcode-13'
   ]
 }

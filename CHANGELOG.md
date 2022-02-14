@@ -1,3 +1,9 @@
+# v3.2.0
+
+ * feat: Enable arm64 prebuilt binaries for Apple Silicon now that Xcode supports it. Fixes
+   [#75](https://github.com/appcelerator/node-ios-device/issues/75).
+ * chore: Updated dependencies.
+
 # v3.1.1 (Jan 5, 2021)
 
  * chore: Added arm64 prebuildify script for Apple M1 support, but it's currently untested.

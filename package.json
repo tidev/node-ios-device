@@ -1,6 +1,6 @@
 {
   "name": "node-ios-device",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "description": "Simple library for detecting and installing apps on iOS devices",
   "main": "./src/index",
   "gypfile": true,
@@ -23,7 +23,7 @@
   "bin": "./bin/node-ios-device",
   "scripts": {
     "install": "node -e \"process.platform === 'darwin' && require('node-gyp-build/bin.js')\"",
-    "prepublishOnly": "npm run prebuild && npm run prebuild-ia32",
+    "prepublishOnly": "npm run prebuild && npm run prebuild-arm64 && npm run prebuild-ia32",
     "prebuild": "prebuildify --napi=true --strip --electron-compat",
     "prebuild-arm64": "prebuildify --napi=true --strip --arch=arm64",
     "prebuild-ia32": "prebuildify --napi=true --strip --arch=ia32",
@@ -35,16 +35,16 @@
     "test": "JUNIT_REPORT_PATH=junit.xml mocha -r chai --reporter mocha-jenkins-reporter test/**/test-*.js"
   },
   "dependencies": {
-    "cli-kit": "^1.9.2",
+    "cli-kit": "^1.15.0",
     "napi-macros": "^2.0.0",
-    "node-gyp-build": "^4.2.3",
+    "node-gyp-build": "^4.3.0",
     "snooplogg": "^3.0.2"
   },
   "devDependencies": {
-    "chai": "^4.2.0",
-    "mocha": "^8.2.1",
-    "mocha-jenkins-reporter": "^0.4.5",
-    "prebuildify": "^4.1.1"
+    "chai": "^4.3.6",
+    "mocha": "^9.2.0",
+    "mocha-jenkins-reporter": "^0.4.7",
+    "prebuildify": "^5.0.0"
   },
   "homepage": "https://github.com/appcelerator/node-ios-device",
   "bugs": "https://github.com/appcelerator/node-ios-device/issues",
