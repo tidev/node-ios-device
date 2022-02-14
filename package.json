@@ -23,10 +23,9 @@
   "bin": "./bin/node-ios-device",
   "scripts": {
     "install": "node -e \"process.platform === 'darwin' && require('node-gyp-build/bin.js')\"",
-    "prepublishOnly": "npm run prebuild && npm run prebuild-arm64 && npm run prebuild-ia32",
+    "prepublishOnly": "npm run prebuild && npm run prebuild-arm64",
     "prebuild": "prebuildify --napi=true --strip --electron-compat",
     "prebuild-arm64": "prebuildify --napi=true --strip --arch=arm64",
-    "prebuild-ia32": "prebuildify --napi=true --strip --arch=ia32",
     "build": "node-gyp -j 16 build",
     "build-debug": "node-gyp -j 16 build --debug",
     "clean": "node-gyp clean",
