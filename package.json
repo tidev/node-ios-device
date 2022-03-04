@@ -50,7 +50,7 @@
   "binary": {
     "module_name": "node_ios_device",
     "module_path": "./binding/{node_abi}-{platform}-{arch}/",
-    "remote_path": "./appcelerator/{name}/releases/download/v{version}",
+    "remote_path": "./tidev/{name}/releases/download/v{version}",
     "host": "https://github.com",
     "targets": {
       "10.16.3": 64,
