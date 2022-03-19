@@ -1,4 +1,4 @@
-# node-ios-device [![Build Status](https://travis-ci.org/appcelerator/node-ios-device.svg?branch=master)](https://travis-ci.org/appcelerator/node-ios-device) [![Greenkeeper badge](https://badges.greenkeeper.io/appcelerator/node-ios-device.svg)](https://greenkeeper.io/)
+# node-ios-device
 
 Queries connected iOS devices, installs apps, and relays log output.
 
@@ -16,8 +16,8 @@ node-ios-device is currently compatible with the following versions:
    * 16.x (module API v93)
    * 17.x (module API v102)
 
-Only Mac OS X (darwin) is supported. You should make this module an optional
-dependency of your application and it will only be downloaded on OS X.
+Only macOS (darwin) is supported. You should make this module an optional
+dependency of your application and it will only be downloaded on macOS.
 
 > Note: node-ios-device@2.0.0 will only support Node.js 4 and newer.
 
@@ -280,14 +280,6 @@ To debug `node-ios-device`,
  - Add the environment variable `DEBUG=*`
  - Close out the schemes and click "Run"
 
-### Publishing
-
-This section is intended for Appcelerator release managers.
-
-To publish a new release to NPM, run `npm publish`. This will build
-`node-ios-device` for all Node.js module API versions and then upload each
-binary to the associated release on the GitHub repository.
-
 ## License
 
 This project is open source and provided under the Apache Public License
@@ -298,5 +290,3 @@ privacy notice at the end of the file.
 This project contains `mobiledevice.h` from
 [https://bitbucket.org/tristero/mobiledeviceaccess](https://bitbucket.org/tristero/mobiledeviceaccess)
 and is available under public domain.
-
-#### (C) Copyright 2012-2018, [Appcelerator](http://www.appcelerator.com/) Inc. All Rights Reserved.

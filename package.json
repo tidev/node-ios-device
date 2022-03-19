@@ -2,22 +2,15 @@
   "name": "node-ios-device",
   "description": "Simple library for listing and installing apps on iOS devices",
   "version": "1.9.3",
-  "author": {
-    "name": "Appcelerator, Inc.",
-    "email": "info@appcelerator.com"
-  },
+  "author": "TiDev, Inc. <tisdk@cb1inc.com>",
   "maintainers": [
-    {
-      "name": "Chris Barber",
-      "email": "cbarber@appcelerator.com"
-    }
+    "Chris Barber <chris@cb1inc.com>"
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/appcelerator/node-ios-device.git"
+    "url": "git://github.com/tidev/node-ios-device.git"
   },
   "keywords": [
-    "appcelerator",
     "ios",
     "iphone",
     "ipad",
@@ -27,20 +20,21 @@
     "device",
     "devices"
   ],
+  "license": "Apache-2.0",
+  "gypfile": true,
+  "main": "./ios-device",
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.6",
-    "debug": "^4.2.0",
+    "@mapbox/node-pre-gyp": "^1.0.8",
+    "debug": "^4.3.4",
     "nan": "^2.15.0",
     "node-pre-gyp-init": "^1.2.1"
   },
   "devDependencies": {
-    "@octokit/rest": "^18.3.5"
+    "@octokit/rest": "^18.12.0"
   },
   "scripts": {
     "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
-    "build-n-publish-binding": "node ./bin/run.js node-pre-gyp rebuild package publish",
     "prepare": "node ./bin/run.js node ./bin/build-all.js",
-    "package-all": "node ./bin/run.js node ./bin/build-all.js rebuild package",
     "rebuild": "node ./bin/run.js node-pre-gyp rebuild",
     "rebuild-debug": "node ./bin/run.js node-pre-gyp --debug rebuild",
     "xcode": "node ./bin/run.js node-pre-gyp configure -- -f xcode",
@@ -53,19 +47,16 @@
     "remote_path": "./tidev/{name}/releases/download/v{version}",
     "host": "https://github.com",
     "targets": {
-      "10.16.3": 64,
+      "10.24.1": 64,
       "11.15.0": 67,
-      "12.11.0": 72,
-      "13.5.0": 79,
-      "14.13.1": 83,
-      "15.0.1": 88,
-      "16.0.0": 93,
-      "17.0.1": 102
+      "12.22.11": 72,
+      "13.14.0": 79,
+      "14.19.1": 83,
+      "15.14.0": 88,
+      "16.14.2": 93,
+      "17.7.2": 102
     }
   },
-  "license": "Apache-2.0",
-  "gypfile": true,
-  "main": "./ios-device",
   "engines": {
     "node": ">=10.13"
   }
