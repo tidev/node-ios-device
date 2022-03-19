@@ -7,15 +7,13 @@ async function main() {
     const githubToken = process.env.GH_TOKEN;
     if (!githubToken) {
         throw new Error('Publishing requires the environment variable GH_TOKEN to be set!');
-    }    
+    }
 
     const github = new Octokit({
         auth: `token ${githubToken}`
     });
     const packageJSON = require('../package.json');
-    // TODO: Parse the owner/repo from packageJSON.repository.url
-    const owner = 'appcelerator';
-    const repo = 'node-ios-device';
+    const [ gitUrl, owner, repo ] = packageJSON.repository.url.match(/github\.com\/([^\/]+)\/(.+(?=.git)+)/);
 
     const release = {
         owner,
@@ -75,7 +73,7 @@ async function main() {
                 } = await github.repos.uploadReleaseAsset(upload);
                 console.log('Published file', downloadUrl);
                 updated.push(filePath);
-            } catch (err) {                
+            } catch (err) {
                 if (err.errors && err.errors[0].code === 'already_exists') {
                     console.warn(`Did not publish ${filePath} as it already exists`);
                 } else {
