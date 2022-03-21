@@ -19,8 +19,11 @@ jobs:
       with:
         node-version: '16'
 
-    - name: Build
+    - name: Install dependencies
       run: yarn install --frozen-lockfile
+
+    - name: Build
+      run: yarn run prepublishOnly
 
     - name: Archive pre-built bindings
       uses: actions/upload-artifact@v3

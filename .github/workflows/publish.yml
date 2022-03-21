@@ -20,17 +20,17 @@ jobs:
         node-version: '16'
         registry-url: 'https://registry.npmjs.org'
 
-    - name: Build
+    - name: Install dependencies
       run: yarn install --frozen-lockfile
-
-    - name: Archive pre-built bindings
-      uses: actions/upload-artifact@v3
-      with:
-        name: prebuilds
-        path: prebuilds/**
 
     - name: Publish to npm
       env:
         GH_TOKEN: ${{ github.token }}
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       run: npm publish
+
+    - name: Archive pre-built bindings
+      uses: actions/upload-artifact@v3
+      with:
+        name: prebuilds
+        path: prebuilds/**
