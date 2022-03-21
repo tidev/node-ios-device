@@ -11,6 +11,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: Setup node
       uses: actions/setup-node@v2
@@ -23,5 +25,5 @@ jobs:
     - name: Archive pre-built bindings
       uses: actions/upload-artifact@v3
       with:
-        name: binding
-        path: binding/**
+        name: prebuilds
+        path: prebuilds/**
