@@ -1,0 +1,27 @@
+name: Build
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+    runs-on: macos-latest
+    name: Build
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup node
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+
+    - name: Build
+      run: yarn install --frozen-lockfile
+
+    - name: Archive pre-built bindings
+      uses: actions/upload-artifact@v3
+      with:
+        name: binding
+        path: binding/**

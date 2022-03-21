@@ -1,0 +1,34 @@
+name: Publish
+on:
+  release:
+    types: [ created ]
+
+jobs:
+  publish:
+    runs-on: macos-latest
+    name: Publish
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup node
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Build
+      run: yarn install --frozen-lockfile
+
+    - name: Archive pre-built bindings
+      uses: actions/upload-artifact@v3
+      with:
+        name: binding
+        path: binding/**
+
+    - name: Publish to npm
+      env:
+        GH_TOKEN: ${{ github.token }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: npm publish

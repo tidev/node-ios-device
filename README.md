@@ -168,15 +168,15 @@ handy when filing a bug.
 iosDevice.on('log', msg => console.log(msg));
 ```
 
-Alternatively, `node-ios-device` uses the amazing [`snooplogg`][2] debug logger where you simply
+Alternatively, `node-ios-device` uses the amazing [snooplogg][2] debug logger where you simply
 set the `SNOOPLOGG` environment variable to `node-ios-device` (or `*`) and it will print the debug
 log to stdout.
 
 ## License
 
-This project is open source under the [Apache Public License v2][1] and is developed by
-[Axway, Inc](http://www.axway.com/) and the community. Please read the [`LICENSE`][1] file included
-in this distribution for more information.
+This project is open source and provided under the Apache Public License (version 2). Please make
+sure you see the [LICENSE][1] file included in this distribution for more details on the license. Also,
+please take notice of the privacy notice at the end of the file.
 
-[1]: https://github.com/appcelerator/node-ios-device/blob/master/LICENSE
+[1]: https://github.com/tidev/node-ios-device/blob/master/LICENSE
 [2]: https://www.npmjs.com/package/snooplogg
