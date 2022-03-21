@@ -1,7 +1,13 @@
-# v3.2.0
+# v3.2.1 (Mar 20, 2021)
+
+ * build: Moved CI jobs from Jenkins to GitHub actions.
+ * docs: Cleaned up readme.
+ * chore: Updated dependencies.
+
+# v3.2.0 (Feb 14, 2022)
 
  * feat: Enable arm64 prebuilt binaries for Apple Silicon now that Xcode supports it. Fixes
-   [#75](https://github.com/appcelerator/node-ios-device/issues/75).
+   [#75](https://github.com/tidev/node-ios-device/issues/75).
  * chore: Updated dependencies.
 
 # v3.1.1 (Jan 5, 2021)

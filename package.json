@@ -1,16 +1,15 @@
 {
   "name": "node-ios-device",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Simple library for detecting and installing apps on iOS devices",
   "main": "./src/index",
   "gypfile": true,
-  "author": "Axway, Inc. <npmjs@appcelerator.com>",
+  "author": "TiDev, Inc. <tisdk@cb1inc.com>",
   "maintainers": [
-    "Chris Barber <cbarber@axway.com>"
+    "Chris Barber <chris@cb1inc.com>"
   ],
   "license": "Apache-2.0",
   "keywords": [
-    "appcelerator",
     "ios",
     "iphone",
     "ipad",
@@ -31,7 +30,7 @@
     "clean": "node-gyp clean",
     "rebuild": "node-gyp -j 16 rebuild",
     "rebuild-debug": "node-gyp -j 16 rebuild --debug",
-    "test": "JUNIT_REPORT_PATH=junit.xml mocha -r chai --reporter mocha-jenkins-reporter test/**/test-*.js"
+    "test": "mocha -r chai test/**/test-*.js"
   },
   "dependencies": {
     "cli-kit": "^1.15.0",
@@ -41,13 +40,15 @@
   },
   "devDependencies": {
     "chai": "^4.3.6",
-    "mocha": "^9.2.0",
-    "mocha-jenkins-reporter": "^0.4.7",
+    "mocha": "^9.2.2",
     "prebuildify": "^5.0.0"
   },
-  "homepage": "https://github.com/appcelerator/node-ios-device",
-  "bugs": "https://github.com/appcelerator/node-ios-device/issues",
-  "repository": "https://github.com/appcelerator/node-ios-device",
+  "homepage": "https://github.com/tidev/node-ios-device",
+  "bugs": "https://github.com/tidev/node-ios-device/issues",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/tidev/node-ios-device.git"
+  },
   "engines": {
     "node": ">=10.13.0"
   }
