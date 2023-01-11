@@ -24,9 +24,9 @@
   "gypfile": true,
   "main": "./ios-device",
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.8",
+    "@mapbox/node-pre-gyp": "^1.0.10",
     "debug": "^4.3.4",
-    "nan": "^2.15.0",
+    "nan": "^2.17.0",
     "node-pre-gyp-init": "^1.2.1"
   },
   "devDependencies": {
