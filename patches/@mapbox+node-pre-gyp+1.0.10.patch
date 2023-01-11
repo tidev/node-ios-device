@@ -1,0 +1,19 @@
+diff --git a/node_modules/@mapbox/node-pre-gyp/lib/util/abi_crosswalk.json b/node_modules/@mapbox/node-pre-gyp/lib/util/abi_crosswalk.json
+index 7f52972..089c6e9 100644
+--- a/node_modules/@mapbox/node-pre-gyp/lib/util/abi_crosswalk.json
++++ b/node_modules/@mapbox/node-pre-gyp/lib/util/abi_crosswalk.json
+@@ -2598,5 +2598,13 @@
+   "17.1.0": {
+     "node_abi": 102,
+     "v8": "9.5"
++  },
++  "18.13.0":{
++    "node_abi": 108,
++    "v8": "10.2"
++  } ,
++  "19.4.0": {
++    "node_abi": 111,
++    "v8": "10.8"
+   }
+ }
+\ No newline at end of file
