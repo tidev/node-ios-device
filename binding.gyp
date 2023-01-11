@@ -4,7 +4,8 @@
 		'v8_enable_pointer_compression': 'false',
 		'v8_enable_31bit_smis_on_64bit_arch': 'false',
 		'mobiledevice_framework_location': '/System/Library/PrivateFrameworks/MobileDevice.framework',
-		'new_mobiledevice_framework_location': '/Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework'
+		'new_mobiledevice_framework_location': '/Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework',
+		'openssl_fips' : ''
 	},
 	'conditions': [
 		['OS=="mac"', {
