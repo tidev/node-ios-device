@@ -7,6 +7,9 @@ if (process.platform !== 'darwin') {
 }
 
 const spawnSync = require('child_process').spawnSync;
+
+spawnSync('patch-package', { stdio: 'inherit' });
+
 const args = process.argv.slice(2);
 const cmd = args.shift();
 
