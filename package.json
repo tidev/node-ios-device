@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "Simple library for listing and installing apps on iOS devices",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "author": "TiDev, Inc. <tisdk@cb1inc.com>",
   "maintainers": [
     "Chris Barber <chris@cb1inc.com>"
@@ -57,7 +57,8 @@
       "16.14.2": 93,
       "17.7.2": 102,
       "18.13.0": 108,
-      "19.4.0": 111
+      "19.4.0": 111,
+      "20.0.0": 115
     }
   },
   "engines": {
