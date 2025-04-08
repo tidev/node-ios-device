@@ -7,25 +7,10 @@ Queries connected iOS devices, installs apps, and relays log output.
 node-ios-device is currently compatible with the following versions:
 
  * Node.js
-   * 10.x (module API v64)
-   * 11.x (module API v67)
-   * 12.x (module API v72)
-   * 13.x (module API v79)
-   * 14.x (module API v83)
-   * 15.x (module API v88)
-   * 16.x (module API v93)
-   * 17.x (module API v102)
+   * 18.x - 23.x (check package.json - targets section)
 
 Only macOS (darwin) is supported. You should make this module an optional
 dependency of your application and it will only be downloaded on macOS.
-
-> Note: node-ios-device@2.0.0 will only support Node.js 4 and newer.
-
-> Note: Support for Node.js 0.12 and io.js <3.x has been dropped because they fail to compile with
-> Xcode 8.3 due to an issue with V8. Interestingly, older versions of clang didn't have a problem.
-> Apple claims they cannot reproduce the issue and that the version of clang that ships with Xcode
-> 8.3 is working as expected. If you still need to support Node.js 0.12 and io.js <3.x, then
-> best to stick with node-ios-device@1.2.x.
 
 ## Installation
 

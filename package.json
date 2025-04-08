@@ -24,14 +24,14 @@
   "gypfile": true,
   "main": "./ios-device",
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.10",
+    "@mapbox/node-pre-gyp": "^2.0.0",
     "debug": "^4.3.4",
     "nan": "^2.20.0",
     "node-pre-gyp-init": "^1.2.1",
-    "patch-package": "^6.5.1"
+    "patch-package": "^8.0.0"
   },
   "devDependencies": {
-    "@octokit/rest": "^18.12.0"
+    "@octokit/rest": "^21.1.1"
   },
   "scripts": {
     "install": "node ./bin/run.js node-pre-gyp install --fallback-to-build",
@@ -48,21 +48,14 @@
     "remote_path": "./tidev/{name}/releases/download/v{version}",
     "host": "https://github.com",
     "targets": {
-      "10.24.1": 64,
-      "11.15.0": 67,
-      "12.22.11": 72,
-      "13.14.0": 79,
-      "14.19.1": 83,
-      "15.14.0": 88,
-      "16.14.2": 93,
-      "17.7.2": 102,
       "18.13.0": 108,
       "19.4.0": 111,
       "20.0.0": 115,
-      "22.0.0": 127
+      "22.0.0": 127,
+      "23.0.0": 131
     }
   },
   "engines": {
-    "node": ">=10.13"
+    "node": ">=18"
   }
 }
