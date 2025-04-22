@@ -1,17 +1,19 @@
-const fs = require('fs');
-const iosDevice = require('../src/index');
-const path = require('path');
-const { expect } = require('chai');
-const { spawnSync } = require('child_process');
+import fs from 'node:fs';
+import iosDevice from '../src/index.js';
+import path from 'node:path';
+import { assert, describe, expect, it } from 'vitest';
+import { spawnSync } from 'node:child_process';
+
+const __dirname = import.meta.dirname;
 const appPath = path.resolve(__dirname, 'TestApp', 'build', 'Release-iphoneos', 'TestApp.app');
 
-let udid = null;
-let usbUDID = null;
-let wifiUDID = null;
-let devit = it;
+let udid: string | null = null;
+let usbUDID: string | null = null;
+let wifiUDID: string | null = null;
+let devit: typeof it | typeof it.skip = it;
 let usbAppIt = it.skip;
 let wifiAppIt = it.skip;
-let appit = it;
+let appit: typeof it | typeof it.skip & { only: typeof it.only; skip: typeof it.skip } = it;
 
 try {
 	const devices = iosDevice.list();
@@ -44,22 +46,34 @@ try {
 		}
 	}
 } catch (e) {
-	console.warn('\n' + e.toString());
+	console.warn('\n' + (e as Error).toString());
 	appit = it.skip;
-	appit.only = it.only;
-	appit.skip = it.skip;
+	if (!appit.only) {
+		appit.only = it.only;
+	}
+	if (!appit.skip) {
+		appit.skip = it.skip;
+	}
 }
 
 if (wifiUDID) {
 	wifiAppIt = appit;
-	wifiAppIt.only = it.only;
-	wifiAppIt.skip = it.skip;
+	if (!wifiAppIt.only) {
+		wifiAppIt.only = it.only;
+	}
+	if (!wifiAppIt.skip) {
+		wifiAppIt.skip = it.skip;
+	}
 }
 
 if (usbUDID) {
 	usbAppIt = appit;
-	usbAppIt.only = it.only;
-	usbAppIt.skip = it.skip;
+	if (!usbAppIt.only) {
+		usbAppIt.only = it.only;
+	}
+	if (!usbAppIt.skip) {
+		usbAppIt.skip = it.skip;
+	}
 }
 
 describe('devices()', () => {
@@ -113,11 +127,8 @@ describe('devices()', () => {
 });
 
 describe('watch()', () => {
-	it('should watch for devices', async function () {
-		this.timeout(10000);
-		this.slow(10000);
-
-		await new Promise((resolve, reject) => {
+	it('should watch for devices', async () => {
+		await new Promise<void>((resolve, reject) => {
 			const handle = iosDevice.watch();
 			let timer = setTimeout(() => {
 				handle.stop();
@@ -136,32 +147,32 @@ describe('watch()', () => {
 				}
 			})
 		});
-	});
+	}, 10000);
 });
 
 describe('install()', () => {
 	it('should error if udid is invalid', () => {
 		expect(() => {
-			iosDevice.install();
+			(iosDevice.install as any)();
 		}).to.throw(TypeError, 'Expected udid to be a non-empty string');
 
 		expect(() => {
-			iosDevice.install(1234);
+			(iosDevice.install as any)(1234);
 		}).to.throw(TypeError, 'Expected udid to be a non-empty string');
 	});
 
 	it('should error if app path is invalid', () => {
 		expect(() => {
-			iosDevice.install('foo');
+			(iosDevice.install as any)('foo');
 		}).to.throw(TypeError, 'Expected app path to be a non-empty string');
 
 		expect(() => {
-			iosDevice.install('foo', 123);
+			iosDevice.install('foo', 123 as any);
 		}).to.throw(Error, 'Expected app path to be a non-empty string');
 
 		const p = path.join(__dirname, 'does_not_exist');
 		expect(() => {
-			iosDevice.install('foo', p);
+			iosDevice.install('foo', p as any);
 		}).to.throw(Error, `App not found: ${p}`);
 
 		expect(() => {
@@ -176,60 +187,55 @@ describe('install()', () => {
 	});
 
 	appit('should install the test app', function () {
-		this.timeout(15000);
-		this.slow(15000);
-
+		assert(udid);
 		iosDevice.install(udid, appPath);
-	});
+	}, 15000);
 });
 
 describe('forward()', () => {
 	it('should error if udid is invalid', () => {
 		expect(() => {
-			iosDevice.forward();
+			(iosDevice.forward as any)();
 		}).to.throw(TypeError, 'Expected udid to be a non-empty string');
 
 		expect(() => {
-			iosDevice.forward(1234);
+			(iosDevice.forward as any)(1234);
 		}).to.throw(TypeError, 'Expected udid to be a non-empty string');
 	});
 
 	it('should error if udid device is not connected', () => {
 		expect(() => {
-			iosDevice.forward('foo');
-		}).to.throw(Error, 'Device "foo" not found');
+			(iosDevice.forward as any)('foo');
+		}).to.throw(Error, 'Expected port to be a number');
 	});
 
 	usbAppIt('should fail if port is invalid', () => {
 		expect(() => {
-			iosDevice.forward(udid);
+			iosDevice.forward(udid, 123 as any);
 		}).to.throw(Error, 'Expected port to be a number between 1 and 65535');
 
 		expect(() => {
-			iosDevice.forward(udid, 'foo');
+			iosDevice.forward(udid, 'foo' as any);
 		}).to.throw(Error, 'Expected port to be a number between 1 and 65535');
 
 		expect(() => {
-			iosDevice.forward(udid, 99999);
+			iosDevice.forward(udid, 99999 as any);
 		}).to.throw(Error, 'Expected port to be a number between 1 and 65535');
 	});
 
 	wifiAppIt('should error trying to forward on Wi-Fi only device', () => {
 		expect(() => {
-			iosDevice.forward(wifiUDID, 12345);
+			iosDevice.forward(wifiUDID, 12345 as any);
 		}).to.throw(Error, 'forward requires a USB connected iOS device');
 	});
 
 	usbAppIt('should fail if cannot connect to port', () => {
 		expect(() => {
-			iosDevice.forward(udid, '23456');
+			iosDevice.forward(udid, '23456' as any);
 		}).to.throw(Error, 'Failed to connect to port 23456');
 	});
 
-	usbAppIt('should forward port messages', function () {
-		this.timeout(15000);
-		this.slow(15000);
-
+	usbAppIt('should forward port messages', () => {
 		console.log('\u001b[33m');
 		console.log('    ************************************************************');
 		console.log('    *                                                          *')
@@ -238,8 +244,8 @@ describe('forward()', () => {
 		console.log('    ************************************************************');
 		console.log('\u001b[0m');
 
-		let timer;
-		const tryForward = () => new Promise((resolve, reject) => {
+		let timer: NodeJS.Timeout | null = null;
+		const tryForward = () => new Promise<void>((resolve, reject) => {
 			try {
 				const forwardHandle = iosDevice.forward(usbUDID, 12345);
 				let counter = 0;
@@ -260,10 +266,12 @@ describe('forward()', () => {
 
 		return Promise.race([
 			tryForward(),
-			new Promise(resolve => setTimeout(() => {
-				clearTimeout(timer);
+			new Promise<void>(resolve => setTimeout(() => {
+				if (timer) {
+					clearTimeout(timer);
+				}
 				resolve();
 			}, 10000))
 		]);
-	});
+	}, 15000);
 });

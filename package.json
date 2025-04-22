@@ -1,13 +1,12 @@
 {
   "name": "node-ios-device",
-  "version": "3.2.1",
+  "version": "4.0.0",
   "description": "Simple library for detecting and installing apps on iOS devices",
-  "main": "./src/index",
+  "type": "module",
+  "exports": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "gypfile": true,
-  "author": "TiDev, Inc. <tisdk@cb1inc.com>",
-  "maintainers": [
-    "Chris Barber <chris@cb1inc.com>"
-  ],
+  "author": "TiDev, Inc. <npm@tidev.io>",
   "license": "Apache-2.0",
   "keywords": [
     "ios",
@@ -19,37 +18,59 @@
     "device",
     "devices"
   ],
-  "bin": "./bin/node-ios-device",
   "scripts": {
-    "install": "node -e \"process.platform === 'darwin' && require('node-gyp-build/bin.js')\"",
-    "prepublishOnly": "npm run prebuild && npm run prebuild-arm64",
-    "prebuild": "prebuildify --napi=true --strip --electron-compat",
-    "prebuild-arm64": "prebuildify --napi=true --strip --arch=arm64",
-    "build": "node-gyp -j 16 build",
-    "build-debug": "node-gyp -j 16 build --debug",
+    "build": "pnpm build:bundle && pnpm rebuild",
+    "build:bundle": "rimraf dist && rollup -c rollup.config.ts --configPlugin typescript && pnpm build:types",
+    "build:types": "pnpm build:types:temp && pnpm build:types:roll && pnpm build:types:check",
+    "build:types:temp": "tsc --declaration --emitDeclarationOnly --outDir temp --project tsconfig.build.json",
+    "build:types:roll": "rollup --config rollup.dts.config.ts --configPlugin typescript && rimraf temp",
+    "build:types:check": "tsc --project tsconfig.check.json",
+    "check": "pnpm type-check && pnpm lint",
     "clean": "node-gyp clean",
-    "rebuild": "node-gyp -j 16 rebuild",
-    "rebuild-debug": "node-gyp -j 16 rebuild --debug",
-    "test": "mocha -r chai test/**/test-*.js"
+    "coverage": "vitest --pool=forks --coverage",
+    "install": "node -e \"process.exit(process.platform === 'darwin' ? 0 : 1)\" && node-gyp-build || echo 'Skipping install for non-Darwin platform'",
+    "lint": "oxlint",
+    "prepublishOnly": "pnpm build:bundle && pnpm prebuild",
+    "prebuild": "prebuildify --napi=true --strip --electron-compat",
+    "rebuild": "node-gyp rebuild",
+    "test": "vitest --allowOnly --pool=forks",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "cli-kit": "^1.15.0",
-    "napi-macros": "^2.0.0",
-    "node-gyp-build": "^4.3.0",
-    "snooplogg": "^3.0.2"
+    "napi-macros": "2.2.2",
+    "node-gyp-build": "4.8.4",
+    "snooplogg": "6.0.0"
   },
   "devDependencies": {
-    "chai": "^4.3.6",
-    "mocha": "^9.2.2",
-    "prebuildify": "^5.0.0"
+    "@rollup/plugin-commonjs": "28.0.3",
+    "@rollup/plugin-node-resolve": "16.0.1",
+    "@rollup/plugin-typescript": "12.1.2",
+    "@types/node": "22.14.1",
+    "@vitest/coverage-v8": "3.1.2",
+    "esbuild": "0.25.2",
+    "lefthook": "1.11.11",
+    "node-gyp": "11.2.0",
+    "oxlint": "0.16.7",
+    "prebuildify": "6.0.1",
+    "rimraf": "6.0.1",
+    "rollup": "4.40.0",
+    "rollup-plugin-dts": "6.2.1",
+    "rollup-plugin-esbuild": "6.2.1",
+    "tslib": "2.8.1",
+    "typescript": "5.8.3",
+    "vitest": "3.1.2"
   },
+  "files": [
+    "dist",
+    "prebuilds",
+    "scripts/build.js",
+    "src/*.{cpp,h}",
+    "binding.gyp"
+  ],
   "homepage": "https://github.com/tidev/node-ios-device",
   "bugs": "https://github.com/tidev/node-ios-device/issues",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/tidev/node-ios-device.git"
-  },
+  "repository": "https://github.com/tidev/node-ios-device",
   "engines": {
-    "node": ">=10.13.0"
+    "node": ">=20.18.1"
   }
 }

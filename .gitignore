@@ -1,11 +1,11 @@
 ._*
 .DS_Store
 .nyc_output
+.vscode
 *.tgz
-binding
 /build
+dist
 env.properties
-junit.xml
 node_modules
 npm-debug.log*
 /prebuilds
@@ -16,4 +16,5 @@ xcuserdata/
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata/
 !*.xcworkspace/contents.xcworkspacedata
-yarn-error.log
+.pnpm-debug.log
+*.tsbuildinfo

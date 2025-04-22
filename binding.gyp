@@ -11,8 +11,8 @@
 				{
 					'target_name': 'node_ios_device',
 					'defines': [
-						"NODE_IOS_DEVICE_VERSION=\"<!(node -e \"console.log(require(\'./package.json\').version)\")\"",
-						"NODE_IOS_DEVICE_URL=\"<!(node -e \"console.log(require(\'./package.json\').homepage)\")\""
+						"NODE_IOS_DEVICE_VERSION=\"<!(node -e \"process.stdout.write(require(\'./package.json\').version)\")\"",
+						"NODE_IOS_DEVICE_URL=\"<!(node -e \"process.stdout.write(require(\'./package.json\').homepage)\")\""
 					],
 					'sources': [
 						'src/device.cpp',
