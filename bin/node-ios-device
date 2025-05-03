@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+
+import { parseArgs } from 'node:util';
+import iosDevice from '../dist/index.js';
+
+const args = parseArgs({
+	allowPositionals: true
+});
+
+const [ command ] = args.positionals;
+
+function selectDevice(udid) {
+	if (udid) {
+		return udid;
+	}
+
+	const devices = iosDevice.list();
+	if (!devices.length) {
+		throw new Error('No iOS devices connected');
+	}
+
+	return devices[0].udid;
+}
+
+switch (command) {
+	case 'forward':
+		{
+			const [ port, udid ] = args.positionals;
+			iosDevice.forward(selectDevice(udid), port)
+				.on('data', console.log)
+				.on('end', resolve);
+			break;
+		}
+	case 'devices':
+	case 'ls':
+	case 'list':
+		console.log(JSON.stringify(iosDevice.list(), null, '  '));
+		break;
+	case 'i':
+	case 'install':
+		{
+			const [ appPath, udid ] = args.positionals;
+			iosDevice.install(selectDevice(udid), appPath);
+			break;
+		}
+	case 'track-devices':
+	case 'watch':
+		iosDevice.watch().on('change', devices => {
+			console.log(JSON.stringify(devices, null, '  '));
+			console.log();
+		});
+		break;
+	default:
+		console.log('Usage: node-ios-device <command> [options]');
+		console.log();
+		console.log('Commands:');
+		console.log('  forward <port> <udid>     Forward a port to a device');
+		console.log('  install <appPath> <udid>  Install an app on a device');
+		console.log('  list                      List connected devices');
+		console.log('  watch                     Listens for devices to be connected/disconnected');
+		break;
+}
