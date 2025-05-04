@@ -1,7 +1,8 @@
 import { EventEmitter } from 'node:events';
 import { readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import snooplogg from 'snooplogg';
 
 const logger = snooplogg('node-ios-device');
@@ -9,23 +10,25 @@ const nss = {};
 const extRE = /\.node$/;
 
 function findBinding(): string {
+	const __dirname = dirname(fileURLToPath(import.meta.url));
+
 	for (const type of ['Release', 'Debug'] as const) {
 		try {
-			for (const name of readdirSync(join('build', type))) {
+			for (const name of readdirSync(join(__dirname, 'build', type))) {
 				if (extRE.test(name)) {
-					return resolve('build', type, name);
+					return resolve(__dirname, 'build', type, name);
 				}
 			}
 		} catch {}
 	}
 
 	try {
-		for (const target of readdirSync('prebuilds')) {
+		for (const target of readdirSync(join(__dirname, 'prebuilds'))) {
 			const [platform, arch] = target.split('-');
 			if (arch === process.arch && platform === process.platform) {
-				for (const binding of readdirSync(join('prebuilds', target))) {
+				for (const binding of readdirSync(join(__dirname, 'prebuilds', target))) {
 					if (extRE.test(binding)) {
-						return resolve('prebuilds', target, binding);
+						return resolve(__dirname, 'prebuilds', target, binding);
 					}
 				}
 			}
