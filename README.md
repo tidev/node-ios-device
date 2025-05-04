@@ -1,11 +1,10 @@
-# node-ios-device
+<br>
+<div align="center">
+	<img width="640" height="200" src="media/banner.jpg" alt="node-ios-device">
+</div>
+<br>
 
 Queries connected iOS devices, installs apps, and relays log output.
-
-## Prerequisites
-
-`node-ios-device` only works on macOS 10.11 or newer. It use N-API version 3 and requires Node.js
-10.13.0 LTS or newer.
 
 ## Installation
 
@@ -23,11 +22,6 @@ COMMANDS:
   i, install            Install an app on the specified device
   ls, list, devices     Lists connected devices
   watch, track-devices  Listens for devices to be connected/disconnected
-
-GLOBAL OPTIONS:
-  --no-color     Disable colors
-  -h, --help     Displays the help screen
-  -v, --version  Outputs the version
 ```
 
 ## Example
@@ -48,7 +42,6 @@ handle.on('error', console.error);
 
 // install an iOS app
 iosDevice.install('<device udid>', '/path/to/my.app');
-console.log('Success!');
 
 // relay output from a TCP port created by an iOS app
 iosDevice
@@ -168,15 +161,32 @@ handy when filing a bug.
 iosDevice.on('log', msg => console.log(msg));
 ```
 
-Alternatively, `node-ios-device` uses the amazing [snooplogg][2] debug logger where you simply
+Alternatively, `node-ios-device` uses the amazing [snooplogg](https://www.npmjs.com/package/snooplogg) debug logger where you simply
 set the `SNOOPLOGG` environment variable to `node-ios-device` (or `*`) and it will print the debug
 log to stdout.
 
-## License
+## Contributing
 
-This project is open source and provided under the Apache Public License (version 2). Please make
-sure you see the [LICENSE][1] file included in this distribution for more details on the license. Also,
-please take notice of the privacy notice at the end of the file.
+Interested in contributing? There are several ways you can help contribute to this project.
 
-[1]: https://github.com/tidev/node-ios-device/blob/master/LICENSE
-[2]: https://www.npmjs.com/package/snooplogg
+### New Features, Improvements, Bug Fixes, & Documentation
+
+Source code contributions are always welcome! Before we can accept your pull request, you must sign a Contributor License Agreement (CLA). Please visit https://tidev.io/contribute for more information.
+
+### Donations
+
+Please consider supporting this project by making a charitable [donation](https://tidev.io/donate). The money you donate goes to compensate the skilled engineeers and maintainers that keep this project going.
+
+### Code of Conduct
+
+TiDev wants to provide a safe and welcoming community for everyone to participate. Please see our [Code of Conduct](https://tidev.io/code-of-conduct) that applies to all contributors.
+
+## Security
+
+If you find a security related issue, please send an email to [security@tidev.io](mailto:security@tidev.io) instead of publicly creating a ticket.
+
+## Stay Connected
+
+For the latest information, please find us on X: [Titanium SDK](https://x.com/titaniumsdk) and [TiDev](https://x.com/tidevio).
+
+Join our growing Slack community by visiting https://slack.tidev.io!

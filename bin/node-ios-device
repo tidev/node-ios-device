@@ -51,9 +51,9 @@ switch (command) {
 		});
 		break;
 	default:
-		console.log('Usage: node-ios-device <command> [options]');
+		console.log('USAGE: node-ios-device <command> [options]');
 		console.log();
-		console.log('Commands:');
+		console.log('COMMANDS:');
 		console.log('  forward <port> <udid>     Forward a port to a device');
 		console.log('  install <appPath> <udid>  Install an app on a device');
 		console.log('  list                      List connected devices');
