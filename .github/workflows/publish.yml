@@ -71,7 +71,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: intel-prebuild
-        path: prebuilds/darwin-x64/node-ios-device.node
+        path: prebuilds/darwin-x64
 
     - name: Publish to npm
       env:
