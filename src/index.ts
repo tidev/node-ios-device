@@ -10,7 +10,7 @@ const nss = {};
 const extRE = /\.node$/;
 
 function findBinding(): string {
-	const __dirname = dirname(fileURLToPath(import.meta.url));
+	const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
 
 	for (const type of ['Release', 'Debug'] as const) {
 		try {
