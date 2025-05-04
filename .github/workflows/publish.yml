@@ -4,9 +4,9 @@ on:
     types: [published]
 
 jobs:
-  publish:
-    runs-on: macos-latest
-    name: Publish
+  build-intel:
+    name: Build Intel binary
+    runs-on: macos-13
 
     steps:
     - name: Checkout repository
@@ -31,6 +31,46 @@ jobs:
 
     - name: Build
       run: pnpm build
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: intel-prebuild
+        path: prebuilds/darwin-x64/node-ios-device.node
+
+  publish:
+    name: Publish
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: latest
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Lint
+      run: pnpm check
+
+    - name: Build
+      run: pnpm build
+
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: intel-prebuild
+        path: prebuilds/darwin-x64/node-ios-device.node
 
     - name: Publish to npm
       env:
