@@ -1,6 +1,6 @@
 {
   "name": "node-ios-device",
-  "version": "4.0.0-rc7",
+  "version": "4.0.0-rc8",
   "description": "Simple library for detecting and installing apps on iOS devices",
   "type": "module",
   "bin": "./bin/node-ios-device",
@@ -66,7 +66,8 @@
     "prebuilds",
     "scripts/build.js",
     "src/*.{cpp,h}",
-    "binding.gyp"
+    "binding.gyp",
+    "media"
   ],
   "homepage": "https://github.com/tidev/node-ios-device",
   "bugs": "https://github.com/tidev/node-ios-device/issues",
