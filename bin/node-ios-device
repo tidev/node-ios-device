@@ -1,12 +1,26 @@
 #!/usr/bin/env node
 
 import { parseArgs } from 'node:util';
-import iosDevice from '../dist/index.js';
+import { readFileSync } from 'node:fs';
 
 const args = parseArgs({
-	allowPositionals: true
+	allowPositionals: true,
+	options: {
+		version: {
+			type: 'boolean',
+			short: 'v',
+		},
+	},
+	strict: true,
 });
 
+if (args.values.version) {
+	const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
+	console.log(packageJson.version);
+	process.exit(0);
+}
+
+const { default: iosDevice } = await import('../dist/index.js');
 const [ command ] = args.positionals;
 
 function selectDevice(udid) {
@@ -54,9 +68,12 @@ switch (command) {
 		console.log('USAGE: node-ios-device <command> [options]');
 		console.log();
 		console.log('COMMANDS:');
-		console.log('  forward <port> <udid>     Forward a port to a device');
-		console.log('  install <appPath> <udid>  Install an app on a device');
-		console.log('  list                      List connected devices');
-		console.log('  watch                     Listens for devices to be connected/disconnected');
+		console.log('  forward <port> <udid>        Connects to a port on an device and relays messages');
+		console.log('  i, install <appPath> <udid>  Install an app on the specified device');
+		console.log('  ls, list                     List connected devices');
+		console.log('  watch                        Listens for devices to be connected/disconnected');
+		console.log();
+		console.log('OPTIONS:');
+		console.log('  -v, --version                Outputs the version');
 		break;
 }

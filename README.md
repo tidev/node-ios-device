@@ -18,10 +18,13 @@ $ node-ios-device
 USAGE: node-ios-device <command> [options]
 
 COMMANDS:
-  forward               Connects to a port on an device and relays messages
-  i, install            Install an app on the specified device
-  ls, list, devices     Lists connected devices
-  watch, track-devices  Listens for devices to be connected/disconnected
+  forward <port> <udid>        Connects to a port on an device and relays messages
+  i, install <appPath> <udid>  Install an app on the specified device
+  ls, list                     Lists connected devices
+  watch                        Listens for devices to be connected/disconnected
+
+OPTIONS:
+  -v, --version                Outputs the version
 ```
 
 ## Example
