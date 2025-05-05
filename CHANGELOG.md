@@ -1,3 +1,9 @@
+# v4.0.0
+
+ * BREAKING CHANGE: Require Node.js 20.18.1 or newer
+ * feat: Rewrote in TypeScript.
+ * chore: Updated dependencies. 
+
 # v3.2.1 (Mar 20, 2021)
 
  * build: Moved CI jobs from Jenkins to GitHub actions.

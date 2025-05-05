@@ -4,7 +4,7 @@
 // enable the following line to bypass the message queue and print the raw debug log messages to stdout
 // #define ENABLE_RAW_DEBUGGING
 
-#define NAPI_VERSION 3
+#define NAPI_VERSION 8
 
 #include <memory>
 #include <mutex>

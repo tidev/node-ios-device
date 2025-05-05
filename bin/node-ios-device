@@ -1,8 +1,27 @@
 #!/usr/bin/env node
 
-const CLI = require('cli-kit').CLI;
-const iosDevice = require('../src/index');
-const pkgJson = require('../package.json');
+import { parseArgs } from 'node:util';
+import { readFileSync } from 'node:fs';
+
+const args = parseArgs({
+	allowPositionals: true,
+	options: {
+		version: {
+			type: 'boolean',
+			short: 'v',
+		},
+	},
+	strict: true,
+});
+
+if (args.values.version) {
+	const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
+	console.log(packageJson.version);
+	process.exit(0);
+}
+
+const { default: iosDevice } = await import('../dist/index.js');
+const [ command ] = args.positionals;
 
 function selectDevice(udid) {
 	if (udid) {
@@ -17,56 +36,44 @@ function selectDevice(udid) {
 	return devices[0].udid;
 }
 
-new CLI({
-	commands: {
-		forward: {
-			args: [
-				{ name: 'port', desc: 'The port to connect to on the device', required: true },
-				{ name: 'udid', desc: 'The iOS device\'s unique device identifier' }
-			],
-			desc: 'Connects to a port on an device and relays messages',
-			action({ argv }) {
-				return new Promise(resolve => {
-					iosDevice.forward(selectDevice(argv.udid), argv.port)
-						.on('data', console.log)
-						.on('end', resolve);
-				});
-			}
-		},
-		install: {
-			aliases: 'i',
-			args: [
-				{ name: 'appPath', desc: 'The path to a .app directory to install', required: true },
-				{ name: 'udid', desc: 'The iOS device\'s unique device identifier' }
-			],
-			desc: 'Install an app on the specified device',
-			action({ argv }) {
-				iosDevice.install(selectDevice(argv.udid), argv.appPath);
-			}
-		},
-		list: {
-			aliases: [ 'ls', 'devices' ],
-			desc: 'Lists connected devices',
-			action() {
-				console.log(JSON.stringify(iosDevice.list(), null, '  '));
-			}
-		},
-		watch: {
-			aliases: 'track-devices',
-			desc: 'Listens for devices to be connected/disconnected',
-			action() {
-				iosDevice.watch().on('change', devices => {
-					console.log(JSON.stringify(devices, null, '  '));
-					console.log();
-				});
-			}
+switch (command) {
+	case 'forward':
+		{
+			const [ port, udid ] = args.positionals;
+			iosDevice.forward(selectDevice(udid), port)
+				.on('data', console.log)
+				.on('end', resolve);
+			break;
 		}
-	},
-	help: true,
-	name: pkgJson.name,
-	version: pkgJson.version
-}).exec()
-	.catch(err => {
-		console.error(err.message);
-		process.exit(err.exitCode || 1);
-	});
+	case 'devices':
+	case 'ls':
+	case 'list':
+		console.log(JSON.stringify(iosDevice.list(), null, '  '));
+		break;
+	case 'i':
+	case 'install':
+		{
+			const [ appPath, udid ] = args.positionals;
+			iosDevice.install(selectDevice(udid), appPath);
+			break;
+		}
+	case 'track-devices':
+	case 'watch':
+		iosDevice.watch().on('change', devices => {
+			console.log(JSON.stringify(devices, null, '  '));
+			console.log();
+		});
+		break;
+	default:
+		console.log('USAGE: node-ios-device <command> [options]');
+		console.log();
+		console.log('COMMANDS:');
+		console.log('  forward <port> <udid>        Connects to a port on an device and relays messages');
+		console.log('  i, install <appPath> <udid>  Install an app on the specified device');
+		console.log('  ls, list                     List connected devices');
+		console.log('  watch                        Listens for devices to be connected/disconnected');
+		console.log();
+		console.log('OPTIONS:');
+		console.log('  -v, --version                Outputs the version');
+		break;
+}

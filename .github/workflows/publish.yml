@@ -1,36 +1,79 @@
 name: Publish
 on:
   release:
-    types: [ created ]
+    types: [published]
 
 jobs:
-  publish:
-    runs-on: macos-latest
-    name: Publish
+  build-intel:
+    name: Build Intel binary
+    runs-on: macos-13
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      uses: actions/checkout@v4
 
     - name: Setup node
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
-        node-version: '16'
+        node-version: 22
         registry-url: 'https://registry.npmjs.org'
 
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: latest
+
     - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      run: pnpm install
+
+    - name: Lint
+      run: pnpm check
+
+    - name: Build
+      run: pnpm build
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: intel-prebuild
+        path: prebuilds/darwin-x64/node-ios-device.node
+
+  publish:
+    name: Publish
+    needs: build-intel
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: latest
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Lint
+      run: pnpm check
+
+    - name: Build
+      run: pnpm build
+
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: intel-prebuild
+        path: prebuilds/darwin-x64
 
     - name: Publish to npm
       env:
-        GH_TOKEN: ${{ github.token }}
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: npm publish
-
-    - name: Archive pre-built bindings
-      uses: actions/upload-artifact@v3
-      with:
-        name: prebuilds
-        path: prebuilds/**
+      run: npm publish --tag ${{ github.event.release.prerelease && 'next' || 'latest' }}
