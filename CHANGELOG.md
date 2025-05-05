@@ -1,4 +1,4 @@
-# v4.0.0
+# v4.0.0 (May 4, 2025)
 
  * BREAKING CHANGE: Require Node.js 20.18.1 or newer
  * feat: Rewrote in TypeScript.
