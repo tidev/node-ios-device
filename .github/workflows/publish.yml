@@ -93,13 +93,13 @@ jobs:
         payload: |
           {
             "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
-            "text": "New ${{ steps.get-package-info.outputs.name }} release: v${{ steps.get-package-info.outputs.version }}",
+            "text": "Published ${{ steps.get-package-info.outputs.name }}@${{ steps.get-package-info.outputs.version }}",
             "blocks": [
               {
                 "type": "header",
                 "text": {
                   "type": "plain_text",
-                  "text": "New ${{ steps.get-package-info.outputs.name }} release: v${{ steps.get-package-info.outputs.version }}"
+                  "text": "Published ${{ steps.get-package-info.outputs.name }}@${{ steps.get-package-info.outputs.version }}"
                 }
               },
               {
