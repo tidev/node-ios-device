@@ -1,6 +1,6 @@
 {
   "name": "node-ios-device",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "Simple library for detecting and installing apps on iOS devices",
   "type": "module",
   "bin": "./bin/node-ios-device",
