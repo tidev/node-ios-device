@@ -51,7 +51,7 @@
     "esbuild": "0.25.9",
     "lefthook": "1.12.3",
     "node-gyp": "11.4.2",
-    "oxlint": "1.12.0",
+    "oxlint": "1.13.0",
     "prebuildify": "6.0.1",
     "rimraf": "6.0.1",
     "rollup": "4.48.1",
