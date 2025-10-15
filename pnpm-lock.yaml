@@ -15,8 +15,8 @@ importers:
         specifier: 4.8.4
         version: 4.8.4
       snooplogg:
-        specifier: 6.0.1
-        version: 6.0.1
+        specifier: 6.0.2
+        version: 6.0.2
     devDependencies:
       '@rollup/plugin-commonjs':
         specifier: 28.0.7
@@ -1160,8 +1160,8 @@ packages:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
 
-  snooplogg@6.0.1:
-    resolution: {integrity: sha512-2v51BVixfoeuWubuRKEuxoGF1AX2oTrYcrI4ahCJSYQj/1Nlqn4wHEVnUO+yKKxY/RDjLX2z9lKLGJhK/iafFQ==}
+  snooplogg@6.0.2:
+    resolution: {integrity: sha512-4vQO/ikR/PKcR3EmxZzcO+L3SZvNtXH0qGuiSoJ9H4PEa8CXHm2/k2qypJMQBpmh3KghZFrrESvTfmlGHubRow==}
     engines: {node: '>=18.17'}
 
   socks-proxy-agent@8.0.5:
@@ -2378,7 +2378,7 @@ snapshots:
 
   smart-buffer@4.2.0: {}
 
-  snooplogg@6.0.1: {}
+  snooplogg@6.0.2: {}
 
   socks-proxy-agent@8.0.5:
     dependencies:
