@@ -587,8 +587,8 @@ packages:
     resolution: {integrity: sha512-hdsUxulXCi5STId78vRVYEtDAjq99ICAUktLTeTYsLoTE6Z8dS0c8pWNCxwdrk9YfJeobDZc2Y186hD/5ZQgFQ==}
     engines: {node: ^18.17.0 || >=20.5.0}
 
-  chai@6.2.0:
-    resolution: {integrity: sha512-aUTnJc/JipRzJrNADXVvpVqi6CO0dn3nx4EVPxijri+fj3LUUDyZQOgVeW54Ob3Y1Xh9Iz8f+CgaCl8v0mn9bA==}
+  chai@6.2.1:
+    resolution: {integrity: sha512-p4Z49OGG5W/WBCPSS/dH3jQ73kD6tiMmUM+bckNK6Jr5JHMG3k9bg/BvKR8lKmtVBKmOiuVaV2ws8s9oSbwysg==}
     engines: {node: '>=18'}
 
   chownr@1.1.4:
@@ -747,8 +747,8 @@ packages:
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
-  ip-address@10.0.1:
-    resolution: {integrity: sha512-NWv9YLW4PoW2B7xtzaS3NCot75m6nK7Icdv0o3lfMceJVRfSoQwqD4wEH5rLwoKJwUiZ/rfpiVBhnaF0FK4HoA==}
+  ip-address@10.1.0:
+    resolution: {integrity: sha512-XXADHxXmvT9+CRxhXg56LJovE+bmWnEWB78LB83VZTprKTmaC5QfruXocxzTZ2Kl0DNwKuBdlIhjL8LeY8Sf8Q==}
     engines: {node: '>= 12'}
 
   is-core-module@2.16.1:
@@ -972,8 +972,8 @@ packages:
       oxlint-tsgolint:
         optional: true
 
-  p-map@7.0.3:
-    resolution: {integrity: sha512-VkndIv2fIB99swvQoA65bm+fsmt6UNdGeIB0oxBs+WhAhdh08QA04JXpI7rbB9r08/nkbysKoya9rtDERYOYMA==}
+  p-map@7.0.4:
+    resolution: {integrity: sha512-tkAQEw8ysMzmkhgw8k+1U/iPhWNhykKnSk4Rd5zLoPJCuJaGRPo6YposrZgaxHKzDHdDWWZvE/Sk7hsL2X/CpQ==}
     engines: {node: '>=18'}
 
   package-json-from-dist@1.0.1:
@@ -1197,8 +1197,8 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
-  vite@7.1.12:
-    resolution: {integrity: sha512-ZWyE8YXEXqJrrSLvYgrRP7p62OziLW7xI5HYGWFzOvupfAlrLvURSzv/FyGyy0eidogEM3ujU+kUG1zuHgb6Ug==}
+  vite@7.2.2:
+    resolution: {integrity: sha512-BxAKBWmIbrDgrokdGZH1IgkIk/5mMHDreLDmCJ0qpyJaAteP8NvMhkwr/ZCQNqNH97bw/dANTE9PDzqwJghfMQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -1620,16 +1620,16 @@ snapshots:
       '@types/chai': 5.2.3
       '@vitest/spy': 4.0.7
       '@vitest/utils': 4.0.7
-      chai: 6.2.0
+      chai: 6.2.1
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@4.0.7(vite@7.1.12(@types/node@24.10.0))':
+  '@vitest/mocker@4.0.7(vite@7.2.2(@types/node@24.10.0))':
     dependencies:
       '@vitest/spy': 4.0.7
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.1.12(@types/node@24.10.0)
+      vite: 7.2.2(@types/node@24.10.0)
 
   '@vitest/pretty-format@4.0.7':
     dependencies:
@@ -1704,12 +1704,12 @@ snapshots:
       minipass-collect: 2.0.1
       minipass-flush: 1.0.5
       minipass-pipeline: 1.2.4
-      p-map: 7.0.3
+      p-map: 7.0.4
       ssri: 12.0.0
       tar: 7.5.2
       unique-filename: 4.0.0
 
-  chai@6.2.0: {}
+  chai@6.2.1: {}
 
   chownr@1.1.4: {}
 
@@ -1874,7 +1874,7 @@ snapshots:
 
   inherits@2.0.4: {}
 
-  ip-address@10.0.1: {}
+  ip-address@10.1.0: {}
 
   is-core-module@2.16.1:
     dependencies:
@@ -2103,7 +2103,7 @@ snapshots:
       '@oxlint/win32-arm64': 1.25.0
       '@oxlint/win32-x64': 1.25.0
 
-  p-map@7.0.3: {}
+  p-map@7.0.4: {}
 
   package-json-from-dist@1.0.1: {}
 
@@ -2253,7 +2253,7 @@ snapshots:
 
   socks@2.8.7:
     dependencies:
-      ip-address: 10.0.1
+      ip-address: 10.1.0
       smart-buffer: 4.2.0
 
   source-map-js@1.2.1: {}
@@ -2351,7 +2351,7 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  vite@7.1.12(@types/node@24.10.0):
+  vite@7.2.2(@types/node@24.10.0):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.3)
@@ -2366,7 +2366,7 @@ snapshots:
   vitest@4.0.7(@types/node@24.10.0):
     dependencies:
       '@vitest/expect': 4.0.7
-      '@vitest/mocker': 4.0.7(vite@7.1.12(@types/node@24.10.0))
+      '@vitest/mocker': 4.0.7(vite@7.2.2(@types/node@24.10.0))
       '@vitest/pretty-format': 4.0.7
       '@vitest/runner': 4.0.7
       '@vitest/snapshot': 4.0.7
@@ -2383,7 +2383,7 @@ snapshots:
       tinyexec: 0.3.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: 7.1.12(@types/node@24.10.0)
+      vite: 7.2.2(@types/node@24.10.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 24.10.0
