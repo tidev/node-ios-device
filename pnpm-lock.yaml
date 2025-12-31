@@ -37,14 +37,14 @@ importers:
         specifier: 0.27.2
         version: 0.27.2
       lefthook:
-        specifier: 2.0.12
-        version: 2.0.12
+        specifier: 2.0.13
+        version: 2.0.13
       node-gyp:
         specifier: 12.1.0
         version: 12.1.0
       oxlint:
-        specifier: 1.35.0
-        version: 1.35.0
+        specifier: 1.36.0
+        version: 1.36.0
       prebuildify:
         specifier: 6.0.1
         version: 6.0.1
@@ -283,43 +283,43 @@ packages:
     resolution: {integrity: sha512-7OsC1gNORBEawOa5+j2pXN9vsicaIOH5cPXxoR6fJOmH6/EXpJB2CajXOu1fPRFun2m1lktEFX11+P89hqO/og==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
-  '@oxlint/darwin-arm64@1.35.0':
-    resolution: {integrity: sha512-ieiYVHkNZPo77Hgrxav595wGS4rRNKuDNrljf+4xhwpJsddrxMpM64IQUf2IvR3MhK4FxdGzhhB6OVmGVHY5/w==}
+  '@oxlint/darwin-arm64@1.36.0':
+    resolution: {integrity: sha512-MJkj82GH+nhvWKJhSIM6KlZ8tyGKdogSQXtNdpIyP02r/tTayFJQaAEWayG2Jhsn93kske+nimg5MYFhwO/rlg==}
     cpu: [arm64]
     os: [darwin]
 
-  '@oxlint/darwin-x64@1.35.0':
-    resolution: {integrity: sha512-1jNHu3j66X5jKySvgtE+jGtjx4ye+xioAucVTi2IuROZO6keK2YG74pnD+9FT+DpWZAtWRZGoW0r0x6aN9sEEg==}
+  '@oxlint/darwin-x64@1.36.0':
+    resolution: {integrity: sha512-VvEhfkqj/99dCTqOcfkyFXOSbx4lIy5u2m2GHbK4WCMDySokOcMTNRHGw8fH/WgQ5cDrDMSTYIGQTmnBGi9tiQ==}
     cpu: [x64]
     os: [darwin]
 
-  '@oxlint/linux-arm64-gnu@1.35.0':
-    resolution: {integrity: sha512-T1lc0UaYbTxZyqVpLfC7eipbauNG8pBpkaZEW4JGz8Y68rxTH7d9s+CF0zxUxNr5RCtcmT669RLVjQT7VrKVLg==}
+  '@oxlint/linux-arm64-gnu@1.36.0':
+    resolution: {integrity: sha512-EMx92X5q+hHc3olTuj/kgkx9+yP0p/AVs4yvHbUfzZhBekXNpUWxWvg4hIKmQWn+Ee2j4o80/0ACGO0hDYJ9mg==}
     cpu: [arm64]
     os: [linux]
 
-  '@oxlint/linux-arm64-musl@1.35.0':
-    resolution: {integrity: sha512-7Wv5Pke9kwWKFycUziSHsmi3EM0389TLzraB0KE/MArrKxx30ycwfJ5PYoMj9ERoW+Ybs0txdaOF/xJy/XyYkg==}
+  '@oxlint/linux-arm64-musl@1.36.0':
+    resolution: {integrity: sha512-7YCxtrPIctVYLqWrWkk8pahdCxch6PtsaucfMLC7TOlDt4nODhnQd4yzEscKqJ8Gjrw1bF4g+Ngob1gB+Qr9Fw==}
     cpu: [arm64]
     os: [linux]
 
-  '@oxlint/linux-x64-gnu@1.35.0':
-    resolution: {integrity: sha512-HDMPOzyVVy+rQl3H7UOq8oGHt7m1yaiWCanlhAu4jciK8dvXeO9OG/OQd74lD/h05IcJh93pCLEJ3wWOG8hTiQ==}
+  '@oxlint/linux-x64-gnu@1.36.0':
+    resolution: {integrity: sha512-lnaJVlx5r3NWmoOMesfQXJSf78jHTn8Z+sdAf795Kgteo72+qGC1Uax2SToCJVN2J8PNG3oRV5bLriiCNR2i6Q==}
     cpu: [x64]
     os: [linux]
 
-  '@oxlint/linux-x64-musl@1.35.0':
-    resolution: {integrity: sha512-kAPBBsUOM3HQQ6n3nnZauvFR9EoXqCSoj4O3OSXXarzsRTiItNrHabVUwxeswZEc+xMzQNR0FHEWg/d4QAAWLw==}
+  '@oxlint/linux-x64-musl@1.36.0':
+    resolution: {integrity: sha512-AhuEU2Qdl66lSfTGu/Htirq8r/8q2YnZoG3yEXLMQWnPMn7efy8spD/N1NA7kH0Hll+cdfwgQkQqC2G4MS2lPQ==}
     cpu: [x64]
     os: [linux]
 
-  '@oxlint/win32-arm64@1.35.0':
-    resolution: {integrity: sha512-qrpBkkOASS0WT8ra9xmBRXOEliN6D/MV9JhI/68lFHrtLhfFuRwg4AjzjxrCWrQCnQ0WkvAVpJzu73F4ICLYZw==}
+  '@oxlint/win32-arm64@1.36.0':
+    resolution: {integrity: sha512-GlWCBjUJY2QgvBFuNRkiRJu7K/djLmM0UQKfZV8IN+UXbP/JbjZHWKRdd4LXlQmzoz7M5Hd6p+ElCej8/90FCg==}
     cpu: [arm64]
     os: [win32]
 
-  '@oxlint/win32-x64@1.35.0':
-    resolution: {integrity: sha512-yPFcj6umrhusnG/kMS5wh96vblsqZ0kArQJS+7kEOSJDrH+DsFWaDCsSRF8U6gmSmZJ26KVMU3C3TMpqDN4M1g==}
+  '@oxlint/win32-x64@1.36.0':
+    resolution: {integrity: sha512-J+Vc00Utcf8p77lZPruQgb0QnQXuKnFogN88kCnOqs2a83I+vTBB8ILr0+L9sTwVRvIDMSC0pLdeQH4svWGFZg==}
     cpu: [x64]
     os: [win32]
 
@@ -728,58 +728,58 @@ packages:
   js-tokens@9.0.1:
     resolution: {integrity: sha512-mxa9E9ITFOt0ban3j6L5MpjwegGz6lBQmM1IJkWeBZGcMxto50+eWdjC/52xDbS2vy0k7vIMK0Fe2wfL9OQSpQ==}
 
-  lefthook-darwin-arm64@2.0.12:
-    resolution: {integrity: sha512-tuBz1sNLien+nKKb8BDopKjS6EnbXU8rQzhMVBY+bnVfsTiYDfbBr4wo/IzA5TcwoTL/b5somCJhljEw6DvSyg==}
+  lefthook-darwin-arm64@2.0.13:
+    resolution: {integrity: sha512-KbQqpNSNTugjtPzt97CNcy/XZy5asJ0+uSLoHc4ML8UCJdsXKYJGozJHNwAd0Xfci/rQlj82A7rPOuTdh0jY0Q==}
     cpu: [arm64]
     os: [darwin]
 
-  lefthook-darwin-x64@2.0.12:
-    resolution: {integrity: sha512-FnuUMPPRMJyTEPXg6PotSrFJ8qf8FDLhhD1zLh74D+9Cye5j9n3lcrCQEjXubPT8du/GZLxMBjjffRbcZ8eYDA==}
+  lefthook-darwin-x64@2.0.13:
+    resolution: {integrity: sha512-s/vI6sEE8/+rE6CONZzs59LxyuSc/KdU+/3adkNx+Q13R1+p/AvQNeszg3LAHzXmF3NqlxYf8jbj/z5vBzEpRw==}
     cpu: [x64]
     os: [darwin]
 
-  lefthook-freebsd-arm64@2.0.12:
-    resolution: {integrity: sha512-DXElB0qR5e6a8cXkFNYakhwCieypbfh6Y4QG39pzMnLsG03g/nhe093o6owfiUZ4mUFyDM6+0xmy0steOooF2g==}
+  lefthook-freebsd-arm64@2.0.13:
+    resolution: {integrity: sha512-iQeJTU7Zl8EJlCMQxNZQpJFAQ9xl40pydUIv5SYnbJ4nqIr9ONuvrioNv6N2LtKP5aBl1nIWQQ9vMjgVyb3k+A==}
     cpu: [arm64]
     os: [freebsd]
 
-  lefthook-freebsd-x64@2.0.12:
-    resolution: {integrity: sha512-iJN1ZxFeaDi4Fi3b9jcW9wgyNl19LOv2NaVOaAi/tG6mlIn196cmSdXkOA3+943ZbqbdfV9I+bBcIKwneXDA3Q==}
+  lefthook-freebsd-x64@2.0.13:
+    resolution: {integrity: sha512-99cAXKRIzpq/u3obUXbOQJCHP+0ZkJbN3TF+1ZQZlRo3Y6+mPSCg9fh/oi6dgbtu4gTI5Ifz3o5p2KZzAIF9ZQ==}
     cpu: [x64]
     os: [freebsd]
 
-  lefthook-linux-arm64@2.0.12:
-    resolution: {integrity: sha512-byvmO4Iri6P0COwM8c3lGgeCV3Q0hh1XJpRfrcZDr4Wslq9O63t6J3T6i87oOtY+UjC9pXLl6xGk6hlUcHZ3BQ==}
+  lefthook-linux-arm64@2.0.13:
+    resolution: {integrity: sha512-RWarenY3kLy/DT4/8dY2bwDlYwlELRq9MIFq+FiMYmoBHES3ckWcLX2JMMlM49Y672paQc7MbneSrNUn/FQWhg==}
     cpu: [arm64]
     os: [linux]
 
-  lefthook-linux-x64@2.0.12:
-    resolution: {integrity: sha512-KBaiinmf336rA+/dmYs7H7TTeAOByB0CyLA7k8IecTCuaiuKr6ez7ktSjht19poa5G+V0mts4GgEGcx6HViR0w==}
+  lefthook-linux-x64@2.0.13:
+    resolution: {integrity: sha512-QZRcxXGf8Uj/75ITBqoBh0zWhJE7+uFoRxEHwBq0Qjv55Q4KcFm7FBN/IFQCSd14reY5pmY3kDaWVVy60cAGJA==}
     cpu: [x64]
     os: [linux]
 
-  lefthook-openbsd-arm64@2.0.12:
-    resolution: {integrity: sha512-1QBMXX1UW5rtgC4TB52OKWB7Rz/kCBRB+bKKLT/gDD79aPzLgJANTitQQzgFNIWoa7aM9UvzvIAJzOo6FcFIbg==}
+  lefthook-openbsd-arm64@2.0.13:
+    resolution: {integrity: sha512-LAuOWwnNmOlRE0RxKMOhIz5Kr9tXi0rCjzXtDARW9lvfAV6Br2wP+47q0rqQ8m/nVwBYoxfJ/RDunLbb86O1nA==}
     cpu: [arm64]
     os: [openbsd]
 
-  lefthook-openbsd-x64@2.0.12:
-    resolution: {integrity: sha512-zPcvUzs65GexRA37UHmaZqWuEGSU/zpBaPIY98MybXzzcJfCIf+O0oUQe2riMllwYGvNW0B1y3NOYRziDNe/vA==}
+  lefthook-openbsd-x64@2.0.13:
+    resolution: {integrity: sha512-n9TIN3QLncyxOHomiKKwzDFHKOCm5H28CVNAZFouKqDwEaUGCs5TJI88V85j4/CgmLVUU8uUn4ClVCxIWYG59w==}
     cpu: [x64]
     os: [openbsd]
 
-  lefthook-windows-arm64@2.0.12:
-    resolution: {integrity: sha512-kgwxguS2GssoHM4SMTp+ArD/Gjg9q5MinD6iI5vSFpuJygD13ZWiXQQfESMHq9y/v1XkD0BdHTJej49dx8P+Vw==}
+  lefthook-windows-arm64@2.0.13:
+    resolution: {integrity: sha512-sdSC4F9Di7y0t43Of9MOA5g/0CmvkM4juQ3sKfUhRcoygetLJn4PR2/pvuDOIaGf4mNMXBP5IrcKaeDON9HrcA==}
     cpu: [arm64]
     os: [win32]
 
-  lefthook-windows-x64@2.0.12:
-    resolution: {integrity: sha512-Tf/VtSOtF3rBTc9dzRWROa+HuhqaiIV+Xp+1gzlx5+uCueLM0m87Rz6yd4IN5mL7TrDaNkiRXI3FvjCp0dUE4Q==}
+  lefthook-windows-x64@2.0.13:
+    resolution: {integrity: sha512-ccl1v7Fl10qYoghEtjXN+JC1x/y/zLM/NSHf3NFGeKEGBNd1P5d/j6w8zVmhfzi+ekS8whXrcNbRAkLdAqUrSw==}
     cpu: [x64]
     os: [win32]
 
-  lefthook@2.0.12:
-    resolution: {integrity: sha512-I2FdA9cdnq1icwlNz4RADs7exuqe47q1N9+p2LmcP/WfchWh16mvTB82OAD7w7zK9GxblS9GpF7pASaOSl4c7A==}
+  lefthook@2.0.13:
+    resolution: {integrity: sha512-D39rCVl7/GpqakvhQvqz07SBpzUWTvWjXKnBZyIy8O6D+Lf9xD6tnbHtG5nWXd9iPvv1AKGQwL9R/e5rNtV6SQ==}
     hasBin: true
 
   lru-cache@11.2.4:
@@ -885,8 +885,8 @@ packages:
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
 
-  oxlint@1.35.0:
-    resolution: {integrity: sha512-QDX1aUgaiqznkGfTM2qHwva2wtKqhVoqPSVXrnPz+yLUhlNadikD3QRuRtppHl7WGuy3wG6nKAuR8lash3aWSg==}
+  oxlint@1.36.0:
+    resolution: {integrity: sha512-IicUdXfXgI8OKrDPnoSjvBfeEF8PkKtm+CoLlg4LYe4ypc8U+T4r7730XYshdBGZdelg+JRw8GtCb2w/KaaZvw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -1318,28 +1318,28 @@ snapshots:
     dependencies:
       semver: 7.7.3
 
-  '@oxlint/darwin-arm64@1.35.0':
+  '@oxlint/darwin-arm64@1.36.0':
     optional: true
 
-  '@oxlint/darwin-x64@1.35.0':
+  '@oxlint/darwin-x64@1.36.0':
     optional: true
 
-  '@oxlint/linux-arm64-gnu@1.35.0':
+  '@oxlint/linux-arm64-gnu@1.36.0':
     optional: true
 
-  '@oxlint/linux-arm64-musl@1.35.0':
+  '@oxlint/linux-arm64-musl@1.36.0':
     optional: true
 
-  '@oxlint/linux-x64-gnu@1.35.0':
+  '@oxlint/linux-x64-gnu@1.36.0':
     optional: true
 
-  '@oxlint/linux-x64-musl@1.35.0':
+  '@oxlint/linux-x64-musl@1.36.0':
     optional: true
 
-  '@oxlint/win32-arm64@1.35.0':
+  '@oxlint/win32-arm64@1.36.0':
     optional: true
 
-  '@oxlint/win32-x64@1.35.0':
+  '@oxlint/win32-x64@1.36.0':
     optional: true
 
   '@rollup/plugin-commonjs@29.0.0(rollup@4.54.0)':
@@ -1729,48 +1729,48 @@ snapshots:
 
   js-tokens@9.0.1: {}
 
-  lefthook-darwin-arm64@2.0.12:
+  lefthook-darwin-arm64@2.0.13:
     optional: true
 
-  lefthook-darwin-x64@2.0.12:
+  lefthook-darwin-x64@2.0.13:
     optional: true
 
-  lefthook-freebsd-arm64@2.0.12:
+  lefthook-freebsd-arm64@2.0.13:
     optional: true
 
-  lefthook-freebsd-x64@2.0.12:
+  lefthook-freebsd-x64@2.0.13:
     optional: true
 
-  lefthook-linux-arm64@2.0.12:
+  lefthook-linux-arm64@2.0.13:
     optional: true
 
-  lefthook-linux-x64@2.0.12:
+  lefthook-linux-x64@2.0.13:
     optional: true
 
-  lefthook-openbsd-arm64@2.0.12:
+  lefthook-openbsd-arm64@2.0.13:
     optional: true
 
-  lefthook-openbsd-x64@2.0.12:
+  lefthook-openbsd-x64@2.0.13:
     optional: true
 
-  lefthook-windows-arm64@2.0.12:
+  lefthook-windows-arm64@2.0.13:
     optional: true
 
-  lefthook-windows-x64@2.0.12:
+  lefthook-windows-x64@2.0.13:
     optional: true
 
-  lefthook@2.0.12:
+  lefthook@2.0.13:
     optionalDependencies:
-      lefthook-darwin-arm64: 2.0.12
-      lefthook-darwin-x64: 2.0.12
-      lefthook-freebsd-arm64: 2.0.12
-      lefthook-freebsd-x64: 2.0.12
-      lefthook-linux-arm64: 2.0.12
-      lefthook-linux-x64: 2.0.12
-      lefthook-openbsd-arm64: 2.0.12
-      lefthook-openbsd-x64: 2.0.12
-      lefthook-windows-arm64: 2.0.12
-      lefthook-windows-x64: 2.0.12
+      lefthook-darwin-arm64: 2.0.13
+      lefthook-darwin-x64: 2.0.13
+      lefthook-freebsd-arm64: 2.0.13
+      lefthook-freebsd-x64: 2.0.13
+      lefthook-linux-arm64: 2.0.13
+      lefthook-linux-x64: 2.0.13
+      lefthook-openbsd-arm64: 2.0.13
+      lefthook-openbsd-x64: 2.0.13
+      lefthook-windows-arm64: 2.0.13
+      lefthook-windows-x64: 2.0.13
 
   lru-cache@11.2.4: {}
 
@@ -1889,16 +1889,16 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  oxlint@1.35.0:
+  oxlint@1.36.0:
     optionalDependencies:
-      '@oxlint/darwin-arm64': 1.35.0
-      '@oxlint/darwin-x64': 1.35.0
-      '@oxlint/linux-arm64-gnu': 1.35.0
-      '@oxlint/linux-arm64-musl': 1.35.0
-      '@oxlint/linux-x64-gnu': 1.35.0
-      '@oxlint/linux-x64-musl': 1.35.0
-      '@oxlint/win32-arm64': 1.35.0
-      '@oxlint/win32-x64': 1.35.0
+      '@oxlint/darwin-arm64': 1.36.0
+      '@oxlint/darwin-x64': 1.36.0
+      '@oxlint/linux-arm64-gnu': 1.36.0
+      '@oxlint/linux-arm64-musl': 1.36.0
+      '@oxlint/linux-x64-gnu': 1.36.0
+      '@oxlint/linux-x64-musl': 1.36.0
+      '@oxlint/win32-arm64': 1.36.0
+      '@oxlint/win32-x64': 1.36.0
 
   p-map@7.0.4: {}
 
