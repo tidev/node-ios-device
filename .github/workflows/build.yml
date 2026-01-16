@@ -5,25 +5,25 @@ on:
 
 jobs:
   build:
-    # Specify macos-13 because we need to build on an x64 machine and all macos 14 machines are arm based.
+    # Specify macos-15-intel because we need to build on an x64 machine and all macos 14 machines are arm based.
     # There seems to be an issue building x64 variants on arm64 machines.
-    runs-on: macos-13
+    runs-on: macos-15-intel
     name: Build
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup node
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v6
       with:
-        node-version: '18'
+        node-version: '22'
 
     - name: Build
       run: yarn install --frozen-lockfile
 
     - name: Archive pre-built bindings
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: binding
         path: binding/**

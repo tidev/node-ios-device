@@ -1,7 +1,7 @@
 {
   "name": "node-ios-device",
   "description": "Simple library for listing and installing apps on iOS devices",
-  "version": "1.12.1",
+  "version": "1.13.0",
   "author": "TiDev, Inc. <tisdk@cb1inc.com>",
   "maintainers": [
     "Chris Barber <chris@cb1inc.com>"
@@ -24,9 +24,9 @@
   "gypfile": true,
   "main": "./ios-device",
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.10",
+    "@mapbox/node-pre-gyp": "2.0.3",
     "debug": "^4.3.4",
-    "nan": "^2.20.0",
+    "nan": "^2.24.0",
     "node-pre-gyp-init": "^1.2.1",
     "patch-package": "^6.5.1"
   },
@@ -48,18 +48,11 @@
     "remote_path": "./tidev/{name}/releases/download/v{version}",
     "host": "https://github.com",
     "targets": {
-      "10.24.1": 64,
-      "11.15.0": 67,
-      "12.22.11": 72,
-      "13.14.0": 79,
-      "14.19.1": 83,
-      "15.14.0": 88,
-      "16.14.2": 93,
-      "17.7.2": 102,
       "18.13.0": 108,
       "19.4.0": 111,
       "20.0.0": 115,
-      "22.0.0": 127
+      "22.0.0": 127,
+      "24.0.0": 137
     }
   },
   "engines": {
