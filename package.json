@@ -40,7 +40,7 @@
   "dependencies": {
     "napi-macros": "2.2.2",
     "node-gyp-build": "4.8.4",
-    "snooplogg": "6.1.1"
+    "snooplogg": "7.0.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "29.0.2",

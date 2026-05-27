@@ -15,8 +15,8 @@ importers:
         specifier: 4.8.4
         version: 4.8.4
       snooplogg:
-        specifier: 6.1.1
-        version: 6.1.1
+        specifier: 7.0.0
+        version: 7.0.0
     devDependencies:
       '@rollup/plugin-commonjs':
         specifier: 29.0.2
@@ -1100,8 +1100,8 @@ packages:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
 
-  postcss@8.5.14:
-    resolution: {integrity: sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg==}
+  postcss@8.5.15:
+    resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
     engines: {node: ^10 || ^12 || >=14}
 
   prebuildify@6.0.1:
@@ -1162,8 +1162,8 @@ packages:
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
 
-  snooplogg@6.1.1:
-    resolution: {integrity: sha512-ERUf0zDe+4/wdzoTlz9aj45PCXRO/jckRY6BwlGLl4dZVr8hanHEW13MSYLSqOz9aDbRR8PGnb4arak+Nh4VqQ==}
+  snooplogg@7.0.0:
+    resolution: {integrity: sha512-2H6q/WahGOjhAPOXfnaj6YxqfhiO+t6urDEgmjNROy3/bRgZDWcPb1UwIkMLUicQGAizsaEV9Y1XortMFuMwuA==}
     engines: {node: '>=18.17'}
 
   source-map-js@1.2.1:
@@ -2120,7 +2120,7 @@ snapshots:
 
   picomatch@4.0.4: {}
 
-  postcss@8.5.14:
+  postcss@8.5.15:
     dependencies:
       nanoid: 3.3.12
       picocolors: 1.1.1
@@ -2221,7 +2221,7 @@ snapshots:
 
   siginfo@2.0.0: {}
 
-  snooplogg@6.1.1: {}
+  snooplogg@7.0.0: {}
 
   source-map-js@1.2.1: {}
 
@@ -2293,7 +2293,7 @@ snapshots:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
-      postcss: 8.5.14
+      postcss: 8.5.15
       rollup: 4.60.3
       tinyglobby: 0.2.16
     optionalDependencies:
