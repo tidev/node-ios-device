@@ -10,16 +10,16 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Setup node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
-        node-version: 22
+        node-version: 26
         registry-url: 'https://registry.npmjs.org'
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v2
+      uses: pnpm/action-setup@v6
       with:
         version: latest
 
@@ -33,7 +33,7 @@ jobs:
       run: pnpm build
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: intel-prebuild
         path: prebuilds/darwin-x64/node-ios-device.node
@@ -45,16 +45,16 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Setup node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
-        node-version: 22
+        node-version: 26
         registry-url: 'https://registry.npmjs.org'
 
     - name: Install pnpm
-      uses: pnpm/action-setup@v2
+      uses: pnpm/action-setup@v6
       with:
         version: latest
 
@@ -68,7 +68,7 @@ jobs:
       run: pnpm build
 
     - name: Download artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: intel-prebuild
         path: prebuilds/darwin-x64
@@ -86,7 +86,7 @@ jobs:
         echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
     - name: Send Slack notification
-      uses: slackapi/slack-github-action@v2.1.1
+      uses: slackapi/slack-github-action@v3.0.3
       with:
         method: chat.postMessage
         token: ${{ secrets.SLACK_BOT_TOKEN }}
