@@ -1,8 +1,21 @@
+# v5.0.0 (Jun 17, 2026)
+ * BREAKING CHANGE: Dropped support for Node.js 20 and older. Please use Node.js 22.19.0 or newer.
+ * chore: Updated dependencies.
+
+# v4.0.3 (Jul 17, 2025)
+ * chore: Updated dependencies.
+
+# v4.0.2 (Jul 15, 2025)
+ * This release has no changes. It exists to test the Slack notifications.
+
+# v4.0.1 (Jul 15, 2025)
+ * chore: Updated dependencies.
+
 # v4.0.0 (May 4, 2025)
 
  * BREAKING CHANGE: Require Node.js 20.18.1 or newer
  * feat: Rewrote in TypeScript.
- * chore: Updated dependencies. 
+ * chore: Updated dependencies.
 
 # v3.2.1 (Mar 20, 2021)
 
