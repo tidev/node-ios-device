@@ -16,6 +16,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 26
+          architecture: x64
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install pnpm
@@ -29,8 +30,8 @@ jobs:
       - name: Lint
         run: pnpm check
 
-      - name: Build
-        run: pnpm build
+      - name: Build x64 prebuild
+        run: pnpm build:prebuilds
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
