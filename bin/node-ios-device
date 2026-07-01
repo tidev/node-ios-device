@@ -2,6 +2,7 @@
 
 import { parseArgs } from 'node:util';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const args = parseArgs({
 	allowPositionals: true,
@@ -15,13 +16,12 @@ const args = parseArgs({
 });
 
 if (args.values.version) {
-	const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
+	const packageJson = JSON.parse(readFileSync(resolve(import.meta.dirname, '../package.json'), 'utf-8'));
 	console.log(packageJson.version);
 	process.exit(0);
 }
 
-const { default: iosDevice } = await import('../dist/index.js');
-const [ command ] = args.positionals;
+const { iosDevice } = await import('../dist/index.mjs');
 
 function selectDevice(udid) {
 	if (udid) {
@@ -36,44 +36,50 @@ function selectDevice(udid) {
 	return devices[0].udid;
 }
 
-switch (command) {
-	case 'forward':
-		{
-			const [ port, udid ] = args.positionals;
-			iosDevice.forward(selectDevice(udid), port)
-				.on('data', console.log)
-				.on('end', resolve);
+async function main() {
+	const [ command ] = args.positionals;
+
+	switch (command) {
+		case 'forward':
+			{
+				const [ port, udid ] = args.positionals;
+				iosDevice.forward(selectDevice(udid), port)
+					.on('data', console.log)
+					.on('end', resolve);
+				break;
+			}
+		case 'devices':
+		case 'ls':
+		case 'list':
+			console.log(JSON.stringify(iosDevice.list(), null, '  '));
 			break;
-		}
-	case 'devices':
-	case 'ls':
-	case 'list':
-		console.log(JSON.stringify(iosDevice.list(), null, '  '));
-		break;
-	case 'i':
-	case 'install':
-		{
-			const [ appPath, udid ] = args.positionals;
-			iosDevice.install(selectDevice(udid), appPath);
+		case 'i':
+		case 'install':
+			{
+				const [ _command, appPath, udid ] = args.positionals;
+				iosDevice.install(selectDevice(udid), appPath);
+				break;
+			}
+		case 'track-devices':
+		case 'watch':
+			iosDevice.watch().on('change', devices => {
+				console.log(JSON.stringify(devices, null, '  '));
+				console.log();
+			});
 			break;
-		}
-	case 'track-devices':
-	case 'watch':
-		iosDevice.watch().on('change', devices => {
-			console.log(JSON.stringify(devices, null, '  '));
+		default:
+			console.log('USAGE: node-ios-device <command> [options]');
 			console.log();
-		});
-		break;
-	default:
-		console.log('USAGE: node-ios-device <command> [options]');
-		console.log();
-		console.log('COMMANDS:');
-		console.log('  forward <port> <udid>        Connects to a port on an device and relays messages');
-		console.log('  i, install <appPath> <udid>  Install an app on the specified device');
-		console.log('  ls, list                     List connected devices');
-		console.log('  watch                        Listens for devices to be connected/disconnected');
-		console.log();
-		console.log('OPTIONS:');
-		console.log('  -v, --version                Outputs the version');
-		break;
+			console.log('COMMANDS:');
+			console.log('  forward <port> <udid>        Connects to a port on an device and relays messages');
+			console.log('  i, install <appPath> <udid>  Install an app on the specified device');
+			console.log('  ls, list                     List connected devices');
+			console.log('  watch                        Listens for devices to be connected/disconnected');
+			console.log();
+			console.log('OPTIONS:');
+			console.log('  -v, --version                Outputs the version');
+			break;
+	}
 }
+
+main().catch(err => console.error(err.toString()));

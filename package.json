@@ -32,14 +32,14 @@
   "scripts": {
     "build": "pnpm build:bundle && pnpm rebuild",
     "build:bundle": "rimraf dist && tsdown -c tsdown.config.ts",
+    "build:prebuilds": "prebuildify --napi=true --strip",
     "check": "pnpm type-check && pnpm lint && pnpm fmt:check",
     "clean": "node-gyp clean",
     "coverage": "vitest --pool=forks --coverage",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint",
-    "prepublishOnly": "pnpm build:bundle && pnpm prebuild",
-    "prebuild": "prebuildify --napi=true --strip --electron-compat",
+    "prepublishOnly": "pnpm build:bundle && pnpm build:prebuilds",
     "rebuild": "node-gyp rebuild",
     "test": "vitest --allowOnly --pool=forks",
     "type-check": "tsc --noEmit"

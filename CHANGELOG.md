@@ -1,6 +1,7 @@
-# v6.0.0
+# v6.0.0 (Jul 1, 2026)
 
 - BREAKING CHANGE: Renamed `nodeIosDevice` export to `iosDevice`.
+- Dropped explicit support for Electron. It may still work, but it's not officially supported.
 - Switched from `rollup` to `tsdown` for bundling.
 - Removed `napi-macros` dependency.
 - Added code linting and formatting.

@@ -34,12 +34,13 @@ try {
 
 	if (!process.argv.includes('--skip-build-testapp')) {
 		console.log('Building TestApp...');
-		const { status, stdout, stderr } = spawnSync('xcodebuild', ['clean', 'build'], {
+		const { status } = spawnSync('xcodebuild', ['clean', 'build'], {
 			cwd: resolve(__dirname, 'TestApp'),
+			stdio: 'inherit',
 		});
 
-		if (!/BUILD SUCCEEDED/.test(stdout.toString())) {
-			throw new Error(`Build TestApp failed (status ${status})\n${stderr.toString()}`);
+		if (status !== 0) {
+			throw new Error(`Build TestApp failed (status ${status})`);
 		}
 	}
 } catch (e) {
