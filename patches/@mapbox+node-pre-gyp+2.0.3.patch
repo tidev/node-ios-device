@@ -1,0 +1,14 @@
+diff --git a/node_modules/@mapbox/node-pre-gyp/lib/util/abi_crosswalk.json b/node_modules/@mapbox/node-pre-gyp/lib/util/abi_crosswalk.json
+index 7f52972..da0dcf9 100644
+--- a/node_modules/@mapbox/node-pre-gyp/lib/util/abi_crosswalk.json
++++ b/node_modules/@mapbox/node-pre-gyp/lib/util/abi_crosswalk.json
+@@ -3302,5 +3302,9 @@
+   "24.0.0": {
+     "node_abi": 137,
+     "v8": "13.6"
++  },
++  "26.0.0": {
++    "node_abi": 148,
++    "v8": "14.6"
+   }
+ }
