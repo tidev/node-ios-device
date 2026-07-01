@@ -8,7 +8,7 @@
 
 #include <memory>
 #include <mutex>
-#include <napi-macros.h>
+#include "macro.h"
 #include <node_api.h>
 #include <queue>
 #include <thread>

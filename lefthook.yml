@@ -2,5 +2,5 @@ pre-commit:
   parallel: true
   commands:
     check:
-      glob: "*.{js,ts}"
-      run: pnpm check
+      glob: '*.{js,ts}'
+      run: pnpm fmt && pnpm check && git update-index --again

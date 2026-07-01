@@ -30,7 +30,7 @@ OPTIONS:
 ## Example
 
 ```js
-import iosDevice from 'node-ios-device';
+import { iosDevice } from 'node-ios-device';
 
 // get all connected iOS devices
 const devices = iosDevice.list();
@@ -38,8 +38,8 @@ console.log('Connected devices:', devices);
 
 // continuously watch for devices to be connected or disconnected
 const handle = iosDevice.watch();
-handle.on('change', devices => {
-    console.log('Connected devices:', devices);
+handle.on('change', (devices) => {
+	console.log('Connected devices:', devices);
 });
 handle.on('error', console.error);
 
@@ -48,9 +48,9 @@ iosDevice.install('<device udid>', '/path/to/my.app');
 
 // relay output from a TCP port created by an iOS app
 iosDevice
-    .forward('<device udid>', 1337)
-    .on('data', console.log)
-    .on('end', () => console.log('Device disconnected'));
+	.forward('<device udid>', 1337)
+	.on('data', console.log)
+	.on('end', () => console.log('Device disconnected'));
 ```
 
 ## API
@@ -63,17 +63,17 @@ Returns an `Array` of device objects.
 
 Device objects contain the following information:
 
-* `udid` - The device's unique device id (e.g. "a4cbe14c0441a2bf87f397602653a4ac71eb0336")
-* `name` - The name of the device (e.g. "My iPhone")
-* `buildVersion` - The build version (e.g. "10B350")
-* `cpuArchitecture` - The CPU architecture (e.g. "armv7s")
-* `deviceClass` - The type of device (e.g. "iPhone", "iPad")
-* `deviceColor` - The color of the device (e.g. "Black", "White")
-* `hardwareModel` - The device module (e.g. "[N41AP](http://theiphonewiki.com/wiki/N41ap)")
-* `modelNumber` - The model number (e.g. "MD636")
-* `productType` - The product type or model id (e.g. "iPhone5,1")
-* `productVersion` - The iOS version (e.g. "6.1.4")
-* `serialNumber` - The device serial number (e.g. "XXXXXXXXXXXX")
+- `udid` - The device's unique device id (e.g. "a4cbe14c0441a2bf87f397602653a4ac71eb0336")
+- `name` - The name of the device (e.g. "My iPhone")
+- `buildVersion` - The build version (e.g. "10B350")
+- `cpuArchitecture` - The CPU architecture (e.g. "armv7s")
+- `deviceClass` - The type of device (e.g. "iPhone", "iPad")
+- `deviceColor` - The color of the device (e.g. "Black", "White")
+- `hardwareModel` - The device module (e.g. "[N41AP](http://theiphonewiki.com/wiki/N41ap)")
+- `modelNumber` - The model number (e.g. "MD636")
+- `productType` - The product type or model id (e.g. "iPhone5,1")
+- `productVersion` - The iOS version (e.g. "6.1.4")
+- `serialNumber` - The device serial number (e.g. "XXXXXXXXXXXX")
 
 There is more data that could have been retrieved from the device, but the properties above seemed
 the most reasonable.
@@ -95,12 +95,11 @@ Emitted when a device is connected or disconnected.
 #### Example:
 
 ```js
-const handle = iosDevice.watch()
-    .on('change', console.log);
+const handle = iosDevice.watch().on('change', console.log);
 
 setTimeout(() => {
-    // turn off tracking after 1 minute
-    handle.stop();
+	// turn off tracking after 1 minute
+	handle.stop();
 }, 60000);
 ```
 
@@ -108,8 +107,8 @@ setTimeout(() => {
 
 Installs an iOS app on the specified device.
 
-* `{String} udid` - The device udid
-* `{String} appPath` - The path to the iOS .app
+- `{String} udid` - The device udid
+- `{String} appPath` - The path to the iOS .app
 
 Currently, an `appPath` that begins with `~` is not supported.
 
@@ -119,8 +118,8 @@ The `appPath` must resolve to an iOS .app, not the .ipa file.
 
 Relays messages from a server running on the device on the specified port.
 
-* `{String} udid` - The device udid
-* `{String} port` - The TCP port listening in the iOS app to connect to
+- `{String} udid` - The device udid
+- `{String} port` - The TCP port listening in the iOS app to connect to
 
 Returns a `Handle` instance that contains a `stop()` method to discontinue
 emitting messages.
@@ -143,8 +142,8 @@ callback. You must manually call `handle.stop()` to cleanup.
 ```js
 const handle = iosDevice
 	.forward('<device udid>', 1337)
-    .on('log', console.log)
-    .on('end', () => console.log('End of forward'));
+	.on('log', console.log)
+	.on('end', () => console.log('End of forward'));
 
 setTimeout(function () {
 	// turn off logging after 1 minute
@@ -161,7 +160,7 @@ debug issues under the hood. The average user will never need to use this, howev
 handy when filing a bug.
 
 ```js
-iosDevice.on('log', msg => console.log(msg));
+iosDevice.on('log', (msg) => console.log(msg));
 ```
 
 Alternatively, `node-ios-device` uses the amazing [snooplogg](https://www.npmjs.com/package/snooplogg) debug logger where you simply

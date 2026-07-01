@@ -1,7 +1,6 @@
 ._*
 .DS_Store
 .nyc_output
-.vscode
 *.tgz
 /build
 dist

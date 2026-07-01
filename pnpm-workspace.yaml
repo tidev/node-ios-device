@@ -1,3 +1,5 @@
 allowBuilds:
   esbuild: true
   lefthook: true
+minimumReleaseAgeExclude:
+  - snooplogg@7.0.1

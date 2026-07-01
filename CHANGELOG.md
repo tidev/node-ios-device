@@ -1,75 +1,87 @@
+# v6.0.0
+
+- BREAKING CHANGE: Renamed `nodeIosDevice` export to `iosDevice`.
+- Switched from `rollup` to `tsdown` for bundling.
+- Removed `napi-macros` dependency.
+- Added code linting and formatting.
+- chore: Updated dependencies.
+
 # v5.0.0 (Jun 17, 2026)
- * BREAKING CHANGE: Dropped support for Node.js 20 and older. Please use Node.js 22.19.0 or newer.
- * chore: Updated dependencies.
+
+- BREAKING CHANGE: Dropped support for Node.js 20 and older. Please use Node.js 22.19.0 or newer.
+- chore: Updated dependencies.
 
 # v4.0.3 (Jul 17, 2025)
- * chore: Updated dependencies.
+
+- chore: Updated dependencies.
 
 # v4.0.2 (Jul 15, 2025)
- * This release has no changes. It exists to test the Slack notifications.
+
+- This release has no changes. It exists to test the Slack notifications.
 
 # v4.0.1 (Jul 15, 2025)
- * chore: Updated dependencies.
+
+- chore: Updated dependencies.
 
 # v4.0.0 (May 4, 2025)
 
- * BREAKING CHANGE: Require Node.js 20.18.1 or newer
- * feat: Rewrote in TypeScript.
- * chore: Updated dependencies.
+- BREAKING CHANGE: Require Node.js 20.18.1 or newer
+- feat: Rewrote in TypeScript.
+- chore: Updated dependencies.
 
 # v3.2.1 (Mar 20, 2021)
 
- * build: Moved CI jobs from Jenkins to GitHub actions.
- * docs: Cleaned up readme.
- * chore: Updated dependencies.
+- build: Moved CI jobs from Jenkins to GitHub actions.
+- docs: Cleaned up readme.
+- chore: Updated dependencies.
 
 # v3.2.0 (Feb 14, 2022)
 
- * feat: Enable arm64 prebuilt binaries for Apple Silicon now that Xcode supports it. Fixes
-   [#75](https://github.com/tidev/node-ios-device/issues/75).
- * chore: Updated dependencies.
+- feat: Enable arm64 prebuilt binaries for Apple Silicon now that Xcode supports it. Fixes
+  [#75](https://github.com/tidev/node-ios-device/issues/75).
+- chore: Updated dependencies.
 
 # v3.1.1 (Jan 5, 2021)
 
- * chore: Added arm64 prebuildify script for Apple M1 support, but it's currently untested.
- * chore: Updated dependencies.
+- chore: Added arm64 prebuildify script for Apple M1 support, but it's currently untested.
+- chore: Updated dependencies.
 
 # v3.1.0 (Dec 2, 2020)
 
- * chore: Updated dependencies.
+- chore: Updated dependencies.
 
 # v3.0.0 (Jun 23, 2020)
 
- * BREAKING CHANGE: Dropped support for Node.js 10.12.0. Please use Node.js 10.13.0 LTS or newer.
- * BREAKING CHANGE: Removed syslog relay API. With iOS 10, syslog no longer returned app specific
-   messages. Then in iOS 13, starting the syslog relay service seems to not work reliably.
- * fix: Fix assertion failure where async handle was being deleted before libuv had fully closed
-   the handle.
- * fix: Flush pending debug log messages when error is thrown initializing relay.
- * chore: Updated dependencies.
+- BREAKING CHANGE: Dropped support for Node.js 10.12.0. Please use Node.js 10.13.0 LTS or newer.
+- BREAKING CHANGE: Removed syslog relay API. With iOS 10, syslog no longer returned app specific
+  messages. Then in iOS 13, starting the syslog relay service seems to not work reliably.
+- fix: Fix assertion failure where async handle was being deleted before libuv had fully closed
+  the handle.
+- fix: Flush pending debug log messages when error is thrown initializing relay.
+- chore: Updated dependencies.
 
 # v2.1.0 (Jun 9, 2020)
 
- * feat: Added Electron compatibility.
- * chore: Updated dependencies.
+- feat: Added Electron compatibility.
+- chore: Updated dependencies.
 
 # v2.0.2 (Jan 8, 2020)
 
- * fix: Fixed segfault when copying device value.
- * build: Added support for building on macOS Catalina.
- * chore: Updated dependencies.
+- fix: Fixed segfault when copying device value.
+- build: Added support for building on macOS Catalina.
+- chore: Updated dependencies.
 
 # v2.0.1 (Aug 14, 2019)
 
- * feat: Registered `node-ios-device` bin in the `package.json`.
- * chore: Updated dependencies.
+- feat: Registered `node-ios-device` bin in the `package.json`.
+- chore: Updated dependencies.
 
 # v2.0.0 (Jul 1, 2019)
 
- * BREAKING CHANGE: Dropped support for Node.js 8.11 and older.
- * BREAKING CHANGE: Completely new API:
-   - `devices()` is now `list()`.
-   - `trackDevices()` is now `watch()` and emits a `change` event instead of `devices`.
-   - `installApp()` is now `install()`.
-   - `log()` has been split up into `syslog()` and `forward()` and emit a `message` event.
- * refactor: Migrated from `nan` to N-API.
+- BREAKING CHANGE: Dropped support for Node.js 8.11 and older.
+- BREAKING CHANGE: Completely new API:
+  - `devices()` is now `list()`.
+  - `trackDevices()` is now `watch()` and emits a `change` event instead of `devices`.
+  - `installApp()` is now `install()`.
+  - `log()` has been split up into `syslog()` and `forward()` and emit a `message` event.
+- refactor: Migrated from `nan` to N-API.

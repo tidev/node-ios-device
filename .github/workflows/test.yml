@@ -21,27 +21,27 @@ jobs:
         node: [22, 24, 26]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-    - name: Use Node.js ${{ matrix.node }}
-      uses: actions/setup-node@v6
-      with:
-        node-version: ${{ matrix.node }}
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v6
-      with:
-        version: latest
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: latest
 
-    - name: Install dependencies
-      run: pnpm install
+      - name: Install dependencies
+        run: pnpm install
 
-    - name: Lint
-      run: pnpm check
+      - name: Lint
+        run: pnpm check
 
-    - name: Build
-      run: pnpm build
+      - name: Build
+        run: pnpm build
 
-    - name: Run tests
-      run: pnpm coverage
+      - name: Run tests
+        run: pnpm coverage

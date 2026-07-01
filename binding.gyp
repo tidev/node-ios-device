@@ -35,7 +35,7 @@
 						'<(module_root_dir)/build'
 					],
 					'include_dirs': [
-						'<!(node -e "require(\'napi-macros\')")'
+						'<(module_root_dir)/src'
 					],
 					'cflags': [
 						'-Wl,-whole-archive -Wl,--no-whole-archive'

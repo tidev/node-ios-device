@@ -4,11 +4,11 @@ export default defineConfig({
 	test: {
 		coverage: {
 			include: ['src/**/*.ts'],
-			reporter: ['html', 'lcov', 'text']
+			reporter: ['html', 'lcov', 'text'],
 		},
 		environment: 'node',
 		globals: false,
 		include: ['test/**/*.test.ts'],
-		watch: false
-	}
+		watch: false,
+	},
 });

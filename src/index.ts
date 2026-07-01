@@ -2,7 +2,6 @@ import { EventEmitter } from 'node:events';
 import { readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import snooplogg from 'snooplogg';
 
 const logger = snooplogg('node-ios-device');
@@ -10,7 +9,7 @@ const nss = {};
 const extRE = /\.node$/;
 
 function findBinding(): string {
-	const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
+	const __dirname = dirname(import.meta.dirname);
 
 	for (const type of ['Release', 'Debug'] as const) {
 		try {
@@ -95,7 +94,7 @@ export class NodeIOSDevice extends EventEmitter {
 
 		// init node-ios-device's debug logging and device manager
 		// note: this is synchronous
-		binding.init((ns, msg) => {
+		binding.init((ns: string | undefined, msg: string) => {
 			this.emit('log', msg);
 			if (ns) {
 				(nss[ns] || (nss[ns] = logger(ns))).log(msg);
@@ -114,7 +113,7 @@ export class NodeIOSDevice extends EventEmitter {
 	 * @emits {data} Emits a buffer containing the data.
 	 * @emits {end} Emits when the device has been disconnected.
 	 */
-	forward(udid, port): ForwardHandle {
+	forward(udid: string, port: number): ForwardHandle {
 		if (!udid || typeof udid !== 'string') {
 			throw new TypeError('Expected udid to be a non-empty string');
 		}
@@ -132,7 +131,7 @@ export class NodeIOSDevice extends EventEmitter {
 	 * @param {String} udid - The device udid to install the app to.
 	 * @param {String} appPath - The path to iOS .app directory to install.
 	 */
-	install(udid: string, appPath: string) {
+	install(udid: string, appPath: string): void {
 		if (!udid || typeof udid !== 'string') {
 			throw new TypeError('Expected udid to be a non-empty string');
 		}
@@ -145,7 +144,7 @@ export class NodeIOSDevice extends EventEmitter {
 
 		try {
 			statSync(appPath);
-		} catch (e) {
+		} catch {
 			throw new Error(`App not found: ${appPath}`);
 		}
 
@@ -165,7 +164,7 @@ export class NodeIOSDevice extends EventEmitter {
 	 *
 	 * @returns {Array.<Object>}
 	 */
-	list(): IOSDevice[] {
+	list(): ReadonlyArray<IOSDevice> {
 		return binding.list();
 	}
 
@@ -175,7 +174,7 @@ export class NodeIOSDevice extends EventEmitter {
 	 * @returns {EventEmitter} The handle to wire up listeners and stop watching.
 	 * @emits {change} Emits an array of device objects.
 	 */
-	watch() {
+	watch(): WatchHandle {
 		return new WatchHandle();
 	}
 }
@@ -186,5 +185,5 @@ export class NodeIOSDevice extends EventEmitter {
  * @type {NodeIOSDevice}
  * @emits {log} Emits a debug log message.
  */
-export const nodeIOSDevice = new NodeIOSDevice();
-export default nodeIOSDevice;
+export const iosDevice = new NodeIOSDevice();
+export default iosDevice;

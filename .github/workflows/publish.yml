@@ -9,34 +9,34 @@ jobs:
     runs-on: macos-14
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-    - name: Setup node
-      uses: actions/setup-node@v6
-      with:
-        node-version: 26
-        registry-url: 'https://registry.npmjs.org'
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
+          registry-url: 'https://registry.npmjs.org'
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v6
-      with:
-        version: latest
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: latest
 
-    - name: Install dependencies
-      run: pnpm install
+      - name: Install dependencies
+        run: pnpm install
 
-    - name: Lint
-      run: pnpm check
+      - name: Lint
+        run: pnpm check
 
-    - name: Build
-      run: pnpm build
+      - name: Build
+        run: pnpm build
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: intel-prebuild
-        path: prebuilds/darwin-x64/node-ios-device.node
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: intel-prebuild
+          path: prebuilds/darwin-x64/node-ios-device.node
 
   publish:
     name: Publish
@@ -44,70 +44,70 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-    - name: Setup node
-      uses: actions/setup-node@v6
-      with:
-        node-version: 26
-        registry-url: 'https://registry.npmjs.org'
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
+          registry-url: 'https://registry.npmjs.org'
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v6
-      with:
-        version: latest
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: latest
 
-    - name: Install dependencies
-      run: pnpm install
+      - name: Install dependencies
+        run: pnpm install
 
-    - name: Lint
-      run: pnpm check
+      - name: Lint
+        run: pnpm check
 
-    - name: Build
-      run: pnpm build
+      - name: Build
+        run: pnpm build
 
-    - name: Download artifact
-      uses: actions/download-artifact@v7
-      with:
-        name: intel-prebuild
-        path: prebuilds/darwin-x64
+      - name: Download artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: intel-prebuild
+          path: prebuilds/darwin-x64
 
-    - name: Publish to npm
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: npm publish --tag ${{ github.event.release.prerelease && 'next' || 'latest' }}
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --tag ${{ github.event.release.prerelease && 'next' || 'latest' }}
 
-    - name: Get package.json info
-      id: get-package-info
-      run: |
-        echo "name=$(node -p "require('./package.json').name")" >> $GITHUB_OUTPUT
-        echo "homepage=$(node -p "require('./package.json').homepage")" >> $GITHUB_OUTPUT
-        echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      - name: Get package.json info
+        id: get-package-info
+        run: |
+          echo "name=$(node -p "require('./package.json').name")" >> $GITHUB_OUTPUT
+          echo "homepage=$(node -p "require('./package.json').homepage")" >> $GITHUB_OUTPUT
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
-    - name: Send Slack notification
-      uses: slackapi/slack-github-action@v3.0.3
-      with:
-        method: chat.postMessage
-        token: ${{ secrets.SLACK_BOT_TOKEN }}
-        payload: |
-          {
-            "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
-            "text": "Published ${{ steps.get-package-info.outputs.name }}@${{ steps.get-package-info.outputs.version }}",
-            "blocks": [
-              {
-                "type": "header",
-                "text": {
-                  "type": "plain_text",
-                  "text": "Published ${{ steps.get-package-info.outputs.name }}@${{ steps.get-package-info.outputs.version }}"
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v3.0.3
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            {
+              "channel": "${{ secrets.SLACK_CHANNEL_ID }}",
+              "text": "Published ${{ steps.get-package-info.outputs.name }}@${{ steps.get-package-info.outputs.version }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Published ${{ steps.get-package-info.outputs.name }}@${{ steps.get-package-info.outputs.version }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.get-package-info.outputs.homepage }}/releases/tag/v${{ steps.get-package-info.outputs.version }}"
+                  }
                 }
-              },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "${{ steps.get-package-info.outputs.homepage }}/releases/tag/v${{ steps.get-package-info.outputs.version }}"
-                }
-              }
-            ]
-          }
+              ]
+            }

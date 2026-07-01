@@ -115,10 +115,10 @@ std::string napi_string_to_std_string(napi_env env, napi_value str) {
 	size_t len;
 	std::string rval;
 
-	NAPI_THROW_RETURN("napi_string_to_std_string", "ERR_NAPI_GET_VALUE_STRING", napi_get_value_string_utf8(env, str, NULL, 0, &len), NULL)
+	NAPI_THROW_RETURN("napi_string_to_std_string", "ERR_NAPI_GET_VALUE_STRING", napi_get_value_string_utf8(env, str, NULL, 0, &len), {})
 	rval.reserve(len + 1);
 	rval.resize(len);
-	NAPI_THROW_RETURN("napi_string_to_std_string", "ERR_NAPI_GET_VALUE_STRING", napi_get_value_string_utf8(env, str, &rval[0], rval.capacity(), NULL), NULL)
+	NAPI_THROW_RETURN("napi_string_to_std_string", "ERR_NAPI_GET_VALUE_STRING", napi_get_value_string_utf8(env, str, &rval[0], rval.capacity(), NULL), {})
 
 	return rval;
 }
