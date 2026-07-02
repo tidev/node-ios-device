@@ -1,3 +1,7 @@
+# v6.0.1 (Jul 1, 2026)
+
+- fix: Add script to copy MobileDevice.framework to build directory.
+
 # v6.0.0 (Jul 1, 2026)
 
 - BREAKING CHANGE: Renamed `nodeIosDevice` export to `iosDevice`.

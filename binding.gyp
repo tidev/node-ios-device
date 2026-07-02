@@ -1,9 +1,7 @@
 {
 	'variables': {
 		'v8_enable_pointer_compression': 0,
-		'v8_enable_31bit_smis_on_64bit_arch': 0,
-		'mobiledevice_framework_location': '/System/Library/PrivateFrameworks/MobileDevice.framework',
-		'new_mobiledevice_framework_location': '/Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework'
+		'v8_enable_31bit_smis_on_64bit_arch': 0
 	},
 	'conditions': [
 		['OS=="mac"', {
@@ -57,9 +55,9 @@
 							'action_name': 'copy_mobiledevice',
 							'inputs': [ ],
 							'outputs': [ '<(module_root_dir)/build/' ],
-							'action': [ 
-								'./copy-framework.sh', '<@(mobiledevice_framework_location)', '<@(new_mobiledevice_framework_location)', '<@(_outputs)'
-							 ]
+							'action': [
+								'node', '<(module_root_dir)/scripts/copy-framework.js', '<@(_outputs)'
+							]
 						}
 					]
 				}

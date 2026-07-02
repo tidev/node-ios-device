@@ -1,6 +1,6 @@
 {
   "name": "node-ios-device",
-  "version": "6.0.0",
+  "version": "6.0.1",
   "description": "Simple library for detecting and installing apps on iOS devices",
   "keywords": [
     "device",
@@ -21,7 +21,7 @@
   "files": [
     "dist",
     "prebuilds",
-    "scripts/build.js",
+    "scripts/copy-framework.js",
     "src/*.{cpp,h}",
     "binding.gyp",
     "media"
