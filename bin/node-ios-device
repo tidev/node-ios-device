@@ -21,8 +21,7 @@ if (args.values.version) {
 	process.exit(0);
 }
 
-const { IOSDevice } = await import('../dist/index.mjs');
-const iosDevice = new IOSDevice();
+const iosDevice = await import('../dist/index.mjs');
 
 function selectDevice(udid) {
 	if (udid) {

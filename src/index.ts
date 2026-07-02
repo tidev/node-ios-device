@@ -39,6 +39,13 @@ function findBinding(): string {
 
 const req = createRequire(import.meta.url);
 const binding = req(findBinding());
+binding.init((ns: string | undefined, msg: string) => {
+	if (ns) {
+		(nss[ns] || (nss[ns] = logger(ns))).log(msg);
+	} else {
+		logger.log(msg);
+	}
+});
 
 export class ForwardHandle extends EventEmitter {
 	emitFn: (event: string, ...args: any[]) => void;
@@ -88,93 +95,76 @@ export type DeviceInfo = {
 	trustedHostAttached: boolean;
 };
 
-export class IOSDevice extends EventEmitter {
-	constructor() {
-		super();
-
-		// init node-ios-device's debug logging and device manager
-		// note: this is synchronous
-		binding.init((ns: string | undefined, msg: string) => {
-			this.emit('log', msg);
-			if (ns) {
-				(nss[ns] || (nss[ns] = logger(ns))).log(msg);
-			} else {
-				logger.log(msg);
-			}
-		});
+/**
+ * Connects to a server running on the iOS device and relays the data.
+ *
+ * @param {String} udid - The device udid to install the app to.
+ * @param {Number} port - The port number to connect to and forward messages from.
+ * @returns {Promise<EventEmitter>} Resolves a handle to wire up listeners and stop watching.
+ * @emits {data} Emits a buffer containing the data.
+ * @emits {end} Emits when the device has been disconnected.
+ */
+export function forward(udid: string, port: number): ForwardHandle {
+	if (!udid || typeof udid !== 'string') {
+		throw new TypeError('Expected udid to be a non-empty string');
 	}
 
-	/**
-	 * Connects to a server running on the iOS device and relays the data.
-	 *
-	 * @param {String} udid - The device udid to install the app to.
-	 * @param {Number} port - The port number to connect to and forward messages from.
-	 * @returns {Promise<EventEmitter>} Resolves a handle to wire up listeners and stop watching.
-	 * @emits {data} Emits a buffer containing the data.
-	 * @emits {end} Emits when the device has been disconnected.
-	 */
-	forward(udid: string, port: number): ForwardHandle {
-		if (!udid || typeof udid !== 'string') {
-			throw new TypeError('Expected udid to be a non-empty string');
-		}
-
-		if (!port || typeof port !== 'number') {
-			throw new TypeError('Expected port to be a number');
-		}
-
-		return new ForwardHandle(udid, port);
+	if (!port || typeof port !== 'number') {
+		throw new TypeError('Expected port to be a number');
 	}
 
-	/**
-	 * Installs an iOS app on the specified device.
-	 *
-	 * @param {String} udid - The device udid to install the app to.
-	 * @param {String} appPath - The path to iOS .app directory to install.
-	 */
-	install(udid: string, appPath: string): void {
-		if (!udid || typeof udid !== 'string') {
-			throw new TypeError('Expected udid to be a non-empty string');
-		}
+	return new ForwardHandle(udid, port);
+}
 
-		if (!appPath || typeof appPath !== 'string') {
-			throw new TypeError('Expected app path to be a non-empty string');
-		}
-
-		appPath = resolve(appPath);
-
-		try {
-			statSync(appPath);
-		} catch {
-			throw new Error(`App not found: ${appPath}`);
-		}
-
-		try {
-			if (!statSync(join(appPath, 'PkgInfo')).isFile()) {
-				throw new Error();
-			}
-		} catch {
-			throw new Error(`Invalid app: ${appPath}`);
-		}
-
-		binding.install(udid, appPath);
+/**
+ * Installs an iOS app on the specified device.
+ *
+ * @param {String} udid - The device udid to install the app to.
+ * @param {String} appPath - The path to iOS .app directory to install.
+ */
+export function install(udid: string, appPath: string): void {
+	if (!udid || typeof udid !== 'string') {
+		throw new TypeError('Expected udid to be a non-empty string');
 	}
 
-	/**
-	 * Returns a list of all connected iOS devices.
-	 *
-	 * @returns {Array.<Object>}
-	 */
-	list(): ReadonlyArray<DeviceInfo> {
-		return binding.list();
+	if (!appPath || typeof appPath !== 'string') {
+		throw new TypeError('Expected app path to be a non-empty string');
 	}
 
-	/**
-	 * Watches a key for changes to subkeys and values.
-	 *
-	 * @returns {EventEmitter} The handle to wire up listeners and stop watching.
-	 * @emits {change} Emits an array of device objects.
-	 */
-	watch(): WatchHandle {
-		return new WatchHandle();
+	appPath = resolve(appPath);
+
+	try {
+		statSync(appPath);
+	} catch {
+		throw new Error(`App not found: ${appPath}`);
 	}
+
+	try {
+		if (!statSync(join(appPath, 'PkgInfo')).isFile()) {
+			throw new Error();
+		}
+	} catch {
+		throw new Error(`Invalid app: ${appPath}`);
+	}
+
+	binding.install(udid, appPath);
+}
+
+/**
+ * Returns a list of all connected iOS devices.
+ *
+ * @returns {Array.<Object>}
+ */
+export function list(): ReadonlyArray<DeviceInfo> {
+	return binding.list();
+}
+
+/**
+ * Watches a key for changes to subkeys and values.
+ *
+ * @returns {EventEmitter} The handle to wire up listeners and stop watching.
+ * @emits {change} Emits an array of device objects.
+ */
+export function watch(): WatchHandle {
+	return new WatchHandle();
 }

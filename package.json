@@ -1,6 +1,6 @@
 {
   "name": "node-ios-device",
-  "version": "7.0.1",
+  "version": "8.0.0",
   "description": "Simple library for detecting and installing apps on iOS devices",
   "keywords": [
     "device",
@@ -27,15 +27,13 @@
     "media"
   ],
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.cts",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "require": "./dist/index.cjs",
-      "import": "./dist/index.mjs"
-    },
-    "./*": "./*"
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
   },
   "scripts": {
     "build": "pnpm build:bundle && pnpm rebuild",
@@ -54,7 +52,7 @@
   },
   "dependencies": {
     "node-gyp-build": "4.8.4",
-    "snooplogg": "8.0.0"
+    "snooplogg": "9.0.0"
   },
   "devDependencies": {
     "@types/node": "26.1.0",

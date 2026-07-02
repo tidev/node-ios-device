@@ -12,8 +12,8 @@ importers:
         specifier: 4.8.4
         version: 4.8.4
       snooplogg:
-        specifier: 8.0.0
-        version: 8.0.0
+        specifier: 9.0.0
+        version: 9.0.0
     devDependencies:
       '@types/node':
         specifier: 26.1.0
@@ -1244,8 +1244,8 @@ packages:
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
 
-  snooplogg@8.0.0:
-    resolution: {integrity: sha512-1CRzAkfUJDADXabueNizFqsGb7XPi/w89s78bAAESUF3ipQUI/daMWtMEQgpyySV+iEWLS/JkJEJXxzpIV3zsA==}
+  snooplogg@9.0.0:
+    resolution: {integrity: sha512-Lf5JkqGBS71q6fAVthKQ4gUjkp1rphSJ9kNIqmL2qlfWUdQoCAF/ABeKdRfktzLpf/xQNThovk3ktlZWsGyzFQ==}
     engines: {node: '>=18.17'}
 
   source-map-js@1.2.1:
@@ -2377,7 +2377,7 @@ snapshots:
 
   siginfo@2.0.0: {}
 
-  snooplogg@8.0.0: {}
+  snooplogg@9.0.0: {}
 
   source-map-js@1.2.1: {}
 
