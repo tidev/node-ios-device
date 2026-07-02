@@ -30,6 +30,9 @@ jobs:
       - name: Lint
         run: pnpm check
 
+      - name: Build bundle
+        run: pnpm build:bundle
+
       - name: Build x64 prebuild
         run: pnpm build:prebuilds
 
@@ -71,8 +74,11 @@ jobs:
       - name: Lint
         run: pnpm check
 
+      - name: Build bundle
+        run: pnpm build:bundle
+
       - name: Build arm64 prebuild
-        run: pnpm build
+        run: pnpm build:prebuilds
 
       - name: Test binding (mjs)
         run: node scripts/test-binding.mjs
