@@ -1,3 +1,8 @@
+# v8.0.0 (Jul 2, 2026)
+
+- BREAKING CHANGE: Remove `IOSDevice` class. Use `import * as iosDevice from 'node-ios-device'` instead.
+- BREAKING CHANGE: Drop CommonJS support - ESM only.
+
 # v7.0.1 (Jul 2, 2026)
 
 - fix: Rename `__dirname` to `_dirname` to avoid conflict in CJS bundle.

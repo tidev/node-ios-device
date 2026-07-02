@@ -30,7 +30,7 @@ OPTIONS:
 ## Example
 
 ```js
-import { iosDevice } from 'node-ios-device';
+import * as iosDevice from 'node-ios-device';
 
 // get all connected iOS devices
 const devices = iosDevice.list();
