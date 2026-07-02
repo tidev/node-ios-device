@@ -1,3 +1,8 @@
+# v7.0.0 (Jul 1, 2026)
+
+- BREAKING CHANGE: Remove default export. Use `import { IOSDevice } from 'node-ios-device'` instead.
+- chore: Updated dependencies.
+
 # v6.0.2 (Jul 1, 2026)
 
 - fix: Set correct export paths for ESM and CJS.

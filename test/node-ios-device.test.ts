@@ -1,4 +1,4 @@
-import iosDevice from '../src/index.js';
+import { IOSDevice } from '../src/index.js';
 import { spawnSync } from 'node:child_process';
 import { join, resolve } from 'node:path';
 import { assert, describe, expect, it } from 'vitest';
@@ -6,6 +6,7 @@ import { assert, describe, expect, it } from 'vitest';
 const __dirname = import.meta.dirname;
 const appPath = resolve(__dirname, 'TestApp', 'build', 'Release-iphoneos', 'TestApp.app');
 
+const iosDevice = new IOSDevice();
 let udid: string | null = null;
 let usbUDID: string | null = null;
 let wifiUDID: string | null = null;

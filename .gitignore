@@ -1,8 +1,10 @@
 ._*
 .DS_Store
 .nyc_output
+.pnpm-store
 *.tgz
 /build
+coverage
 dist
 env.properties
 node_modules
