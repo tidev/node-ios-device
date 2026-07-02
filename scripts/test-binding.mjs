@@ -1,4 +1,4 @@
-import { IOSDevice } from '../dist/index.cjs';
+import { IOSDevice } from '../dist/index.mjs';
 
 const device = new IOSDevice();
 const devices = device.list();

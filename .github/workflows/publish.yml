@@ -33,8 +33,11 @@ jobs:
       - name: Build x64 prebuild
         run: pnpm build:prebuilds
 
-      - name: Test binding
-        run: node scripts/test-binding.js
+      - name: Test binding (mjs)
+        run: node scripts/test-binding.mjs
+
+      - name: Test binding (cjs)
+        run: node scripts/test-binding.cjs
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -71,8 +74,11 @@ jobs:
       - name: Build arm64 prebuild
         run: pnpm build
 
-      - name: Test binding
-        run: node scripts/test-binding.js
+      - name: Test binding (mjs)
+        run: node scripts/test-binding.mjs
+
+      - name: Test binding (cjs)
+        run: node scripts/test-binding.cjs
 
       - name: Download artifact
         uses: actions/download-artifact@v7
