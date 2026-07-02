@@ -1,6 +1,6 @@
 # v7.0.1 (Jul 2, 2026)
 
-- fix: Rename `__dirname` to `currentDir` to avoid conflict in CJS bundle.
+- fix: Rename `__dirname` to `_dirname` to avoid conflict in CJS bundle.
 
 # v7.0.0 (Jul 1, 2026)
 
