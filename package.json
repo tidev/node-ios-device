@@ -1,6 +1,6 @@
 {
   "name": "node-ios-device",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "description": "Simple library for detecting and installing apps on iOS devices",
   "keywords": [
     "device",

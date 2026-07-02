@@ -9,25 +9,25 @@ const nss = {};
 const extRE = /\.node$/;
 
 function findBinding(): string {
-	const __dirname = dirname(import.meta.dirname);
+	const currentDir = dirname(import.meta.dirname);
 
 	for (const type of ['Release', 'Debug'] as const) {
 		try {
-			for (const name of readdirSync(join(__dirname, 'build', type))) {
+			for (const name of readdirSync(join(currentDir, 'build', type))) {
 				if (extRE.test(name)) {
-					return resolve(__dirname, 'build', type, name);
+					return resolve(currentDir, 'build', type, name);
 				}
 			}
 		} catch {}
 	}
 
 	try {
-		for (const target of readdirSync(join(__dirname, 'prebuilds'))) {
+		for (const target of readdirSync(join(currentDir, 'prebuilds'))) {
 			const [platform, arch] = target.split('-');
 			if (arch === process.arch && platform === process.platform) {
-				for (const binding of readdirSync(join(__dirname, 'prebuilds', target))) {
+				for (const binding of readdirSync(join(currentDir, 'prebuilds', target))) {
 					if (extRE.test(binding)) {
-						return resolve(__dirname, 'prebuilds', target, binding);
+						return resolve(currentDir, 'prebuilds', target, binding);
 					}
 				}
 			}
