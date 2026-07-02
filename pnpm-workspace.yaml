@@ -2,4 +2,5 @@ allowBuilds:
   esbuild: true
   lefthook: true
 minimumReleaseAgeExclude:
-  - snooplogg@7.0.1
+  - snooplogg@7.0.1 || 8.0.0
+  - '@types/node@26.1.0'

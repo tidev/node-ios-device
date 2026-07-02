@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import { readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
-import snooplogg from 'snooplogg';
+import { snooplogg } from 'snooplogg';
 
 const logger = snooplogg('node-ios-device');
 const nss = {};
@@ -72,7 +72,7 @@ export class WatchHandle extends EventEmitter {
 	}
 }
 
-export type IOSDevice = {
+export type DeviceInfo = {
 	udid: string;
 	interfaces: ('USB' | 'Wi-Fi')[];
 	name: string;
@@ -88,7 +88,7 @@ export type IOSDevice = {
 	trustedHostAttached: boolean;
 };
 
-export class NodeIOSDevice extends EventEmitter {
+export class IOSDevice extends EventEmitter {
 	constructor() {
 		super();
 
@@ -164,7 +164,7 @@ export class NodeIOSDevice extends EventEmitter {
 	 *
 	 * @returns {Array.<Object>}
 	 */
-	list(): ReadonlyArray<IOSDevice> {
+	list(): ReadonlyArray<DeviceInfo> {
 		return binding.list();
 	}
 
@@ -178,12 +178,3 @@ export class NodeIOSDevice extends EventEmitter {
 		return new WatchHandle();
 	}
 }
-
-/**
- * The `node-ios-device` API and debug log emitter.
- *
- * @type {NodeIOSDevice}
- * @emits {log} Emits a debug log message.
- */
-export const iosDevice = new NodeIOSDevice();
-export default iosDevice;
