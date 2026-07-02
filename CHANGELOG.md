@@ -1,3 +1,7 @@
+# v6.0.2 (Jul 1, 2026)
+
+- fix: Set correct export paths for ESM and CJS.
+
 # v6.0.1 (Jul 1, 2026)
 
 - fix: Add script to copy MobileDevice.framework to build directory.

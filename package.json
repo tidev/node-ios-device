@@ -1,6 +1,6 @@
 {
   "name": "node-ios-device",
-  "version": "6.0.1",
+  "version": "6.0.2",
   "description": "Simple library for detecting and installing apps on iOS devices",
   "keywords": [
     "device",
@@ -27,8 +27,16 @@
     "media"
   ],
   "type": "module",
-  "types": "./dist/index.d.ts",
-  "exports": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    },
+    "./*": "./*"
+  },
   "scripts": {
     "build": "pnpm build:bundle && pnpm rebuild",
     "build:bundle": "rimraf dist && tsdown -c tsdown.config.ts",
