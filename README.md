@@ -4,6 +4,10 @@
 </div>
 <br>
 
+> [!WARNING]  
+> **DEPRECATED**: Since Titanium SDK 14.0.0, Titanium SDK uses the modern Apple `devicectl` CLI to handle device build.
+> This also allows you to install your apps via WiFi and in locked state. Learn more [here](https://github.com/tidev/ioslib/releases/tag/v6.0.0) Enjoy!
+
 Queries connected iOS devices, installs apps, and relays log output.
 
 ## Installation
